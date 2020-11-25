@@ -118,7 +118,7 @@ class PreActResNet(nn.Module):
             lam = Variable(lam)
         
         if target is not None :
-            target_reweighted = to_one_hot(target,self.num_classes)
+            target_reweighted = to_one_hot(target, self.num_classes)
         
         if layer_mix == 0:
                 out, target_reweighted = mixup_process(out, target_reweighted, lam=lam)

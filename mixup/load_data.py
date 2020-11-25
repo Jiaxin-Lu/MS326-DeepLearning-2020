@@ -155,17 +155,15 @@ def load_data_subset(data_aug, batch_size,workers,dataset, data_target_dir, labe
             test_transform = transforms.Compose(
                                             [transforms.ToTensor(), transforms.Normalize(mean, std)])
         elif dataset == 'mnist':
-            hw_size = 24
+            hw_size = 32
             train_transform = transforms.Compose([
-                                transforms.RandomCrop(hw_size),                
-                                transforms.ToTensor(),
-                                transforms.Normalize((0.1307,), (0.3081,))
-                           ])
+                transforms.Resize((hw_size, hw_size)),
+                transforms.ToTensor()
+            ])
             test_transform = transforms.Compose([
-                                transforms.CenterCrop(hw_size),                       
-                                transforms.ToTensor(),
-                                transforms.Normalize((0.1307,), (0.3081,))
-                           ])
+                transforms.Resize((hw_size, hw_size)),
+                transforms.ToTensor()
+            ])
         elif dataset == 'tiny-imagenet-200':
             train_transform = transforms.Compose(
                                                  [transforms.RandomHorizontalFlip(),
@@ -185,17 +183,16 @@ def load_data_subset(data_aug, batch_size,workers,dataset, data_target_dir, labe
     else:
         print ('no data aug')
         if dataset == 'mnist':
-            hw_size = 28
+            hw_size = 32
             train_transform = transforms.Compose([
-                                transforms.ToTensor(),       
-                                transforms.Normalize((0.1307,), (0.3081,))
-                           ])
+                transforms.Resize((hw_size, hw_size)),
+                transforms.ToTensor()
+            ])
             test_transform = transforms.Compose([
-                                transforms.ToTensor(),
-                                transforms.Normalize((0.1307,), (0.3081,))
-                           ])
-                
-        else:   
+                transforms.Resize((hw_size, hw_size)),
+                transforms.ToTensor()
+            ])
+        else:
             train_transform = transforms.Compose(
                                                  [transforms.ToTensor(),
                                                  transforms.Normalize(mean, std)])

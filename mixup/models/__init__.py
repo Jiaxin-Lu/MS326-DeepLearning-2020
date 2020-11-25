@@ -21,5 +21,6 @@ from .preresnet import preactresnet18, preactresnet34, preactresnet50, preactres
 from .caffe_cifar import caffe_cifar
 from .densenet import densenet100_12,densenet100_24
 from .wide_resnet import wrn28_10, wrn28_2
+from .lenet import lenet5
 
 #from .imagenet_resnet import resnet18, resnet34, resnet50, resnet101, resnet152
