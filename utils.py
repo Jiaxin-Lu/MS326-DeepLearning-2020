@@ -4,6 +4,7 @@ from torch.autograd import Variable
 import numpy as np
 import matplotlib
 matplotlib.use('agg')
+import random
 import matplotlib.pyplot as plt
 
 class AverageMeter(object):
