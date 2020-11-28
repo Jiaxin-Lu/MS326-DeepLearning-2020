@@ -1,14 +1,13 @@
-import os
 from functools import reduce
 from operator import __or__
 
-import numpy as np
-import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
 from torch.utils.data.dataset import T_co
 from torch.utils.data.sampler import SubsetRandomSampler
 from torchvision import datasets, transforms
+
+from utils import *
 
 
 class AdversarialDataset(Dataset):
@@ -154,10 +153,10 @@ def attack_single_batch_input(net, images, labels, num_iter, eps=0.3):
     return images
 
 
-def attack_train_data(net, raw_train_data, batch_size, num_iter=100):
+def attack_train_data(log, net, raw_train_data, batch_size, num_iter=100):
     net.eval()
 
-    print("\nStart generating adversarial data...")
+    print_log("\nStart generating adversarial data...", log)
     c, h, w = raw_train_data[0][0].shape
     raw_train_input = []
     raw_train_label = []
@@ -183,11 +182,11 @@ def attack_train_data(net, raw_train_data, batch_size, num_iter=100):
 
     adversarial_dataset = AdversarialDataset(adversarial_train_input, raw_train_label)
 
-    print("Generate adversarial data successfully!")
+    print_log("Generate adversarial data successfully!", log)
     return adversarial_dataset
 
 
-def load_dataset(adversarial_dataset, test_data, num_classes, dataset, batch_size, workers, labels_per_class):
+def load_dataset(adversarial_dataset, test_data, num_classes, dataset, batch_size, workers, labels_per_class, log):
     def get_sampler(labels, labels_per_class=None):
         # Only choose digits in num_classes
         (indices,) = np.where(reduce(__or__, [labels == i for i in np.arange(num_classes)]))
@@ -200,7 +199,7 @@ def load_dataset(adversarial_dataset, test_data, num_classes, dataset, batch_siz
         sampler_train = SubsetRandomSampler(indices_train)
         return sampler_train
 
-    print("\nStart constructing adversarial dataloader...")
+    print_log("\nStart constructing adversarial dataloader...", log)
     if dataset == 'tiny-imagenet-200':
         train_sampler = None
     else:
@@ -218,5 +217,5 @@ def load_dataset(adversarial_dataset, test_data, num_classes, dataset, batch_siz
         test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False,
                                                   num_workers=workers, pin_memory=True)
 
-    print("Constructing adversarial dataset successfully!")
+    print_log("Constructing adversarial dataset successfully!", log)
     return adversarial_dataloader, test_loader

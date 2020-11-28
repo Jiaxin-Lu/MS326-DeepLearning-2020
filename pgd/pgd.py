@@ -95,6 +95,57 @@ def experiment_name(dataset, arch, epochs, dropout, batch_size, lr, momentum, de
     return exp_name
 
 
+def accuracy(output, target, topk=(1,)):
+    """Computes the precision@k for the specified values of k"""
+    maxk = max(topk)
+    batch_size = target.size(0)
+
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+    res = []
+    for k in topk:
+        correct_k = correct[:k].reshape(-1).float().sum(0)
+        res.append(correct_k.mul_(100.0 / batch_size))
+    return res
+
+
+def validate(val_loader, model, log):
+    print_log("\nStart evaluating the effect of PGD attack...", log)
+    criterion = nn.CrossEntropyLoss().cuda()
+    losses = AverageMeter()
+    top1 = AverageMeter()
+    top5 = AverageMeter()
+
+    # switch to evaluate mode
+    model.eval()
+
+    for i, (input_, target) in enumerate(val_loader):
+        input_ = input_.cuda()
+        target = target.cuda(non_blocking=True)
+        with torch.no_grad():
+            input_var = Variable(input_)
+            target_var = Variable(target)
+
+        # compute output
+        output = model(input_var)
+        loss = criterion(output, target_var)
+
+        # measure accuracy and record loss
+        prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
+        losses.update(loss.item(), input_.size(0))
+        top1.update(prec1.item(), input_.size(0))
+        top5.update(prec5.item(), input_.size(0))
+
+    print_log(
+        ('**Adversarial attack** Prec@1 {top1.avg:.3f} Prec@5 {top5.avg:.3f}'
+         + ' Error@1 {error1:.3f} Loss: {losses.avg:.3f} ').format(
+            top1=top1, top5=top5, error1=100 - top1.avg, losses=losses), log)
+
+    return top1.avg, losses.avg
+
+
 def main():
     exp_name = experiment_name(dataset=args.dataset,
                                arch=args.arch,
@@ -144,20 +195,24 @@ def main():
     net.load_state_dict(checkpoint["state_dict"])
     optimizer.load_state_dict(checkpoint["optimizer"])
     recorder = checkpoint["recorder"]
-    print_log("Load model-best checkpoint successfully!\n", log)
+    print_log("Load model-best checkpoint successfully!", log)
 
     adv_dataset_dir = args.data_dir + "adv_data_" + exp_name + ".pth"
     if os.path.exists(adv_dataset_dir):
-        print_log("Load adversarial data from {} directly...".format(adv_dataset_dir), log)
+        print_log("\nLoad adversarial data from {} directly...".format(adv_dataset_dir), log)
         adversarial_dataset = torch.load(adv_dataset_dir)
         print_log("Load adversarial data successfully!", log)
     else:
-        adversarial_dataset = attack_train_data(net, raw_train_data, args.batch_size, num_iter=100)
-        print_log("Save adversarial data to {}...".format(adv_dataset_dir), log)
+        adversarial_dataset = attack_train_data(log, net, raw_train_data, args.batch_size, num_iter=100)
+        print_log("\nSave adversarial data to {}...".format(adv_dataset_dir), log)
         torch.save(adversarial_dataset, adv_dataset_dir)
         print_log("Save adversarial data successfully!", log)
-    train_loader, test_loader = load_dataset(adversarial_dataset, raw_test_data, num_classes,
-                                             args.dataset, args.batch_size, 2, args.labels_per_class)
+    adversarial_dataset.inputs = adversarial_dataset.inputs.cpu()
+    adversarial_dataset.labels = adversarial_dataset.labels.cpu()
+    adv_loader, test_loader = load_dataset(adversarial_dataset, raw_test_data, num_classes,
+                                           args.dataset, args.batch_size, 2, args.labels_per_class, log)
+
+    validate(adv_loader, net, log)
 
     print_log("\nfinish", log)
 
