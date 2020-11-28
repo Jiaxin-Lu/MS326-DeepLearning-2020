@@ -5,7 +5,10 @@ This code has been tested with
 python 3.6.8
 torch 1.0.0
 torchvision 0.2.1
-### Additioanal packages required
+
+### Additional packages required
+
+```
 matplotlib==3.0.2
 numpy==1.15.4
 pandas==0.23.4
@@ -13,8 +16,9 @@ Pillow==5.4.1
 scipy==1.1.0
 seaborn==0.9.0
 six==1.12.0
+```
 
-### Important :Running each of the following commands will automatically create a subdirectory containing the output of that particular expeiment in the manifold_mixup/supervised/experiments directory
+### Important :Running each of the following commands will automatically create a subdirectory containing the output of that particular experiment in the manifold_mixup/supervised/experiments directory
 
 ### How to run experiments for CIFAR10
 
@@ -70,19 +74,19 @@ python main.py --dataset cifar10 --data_dir data/cifar10/ --root_dir experiments
 
 #### No mixup LeNet5
 ```
-python main.py --dataset mnist --data_dir data/mnist/ --root_dir experiments/ --labels_per_class 5000 --arch lenet5 --learning_rate 0.1 --momentum 0.9 --decay 0.0001 --epochs 100 --schedule 500 1000 1500 --gammas 0.1 0.1 0.1 --train vanilla
+python main.py --dataset mnist --data_dir data/mnist/ --root_dir experiments/ --labels_per_class 5000 --arch lenet5 --learning_rate 0.1 --momentum 0.9 --decay 0.0001 --epochs 2000 --schedule 500 1000 1500 --gammas 0.1 0.1 0.1 --train vanilla
 ```
 
 #### Mixup LeNet5
 
 ```
-python main.py --dataset mnist --data_dir data/mnist/ --root_dir experiments/ --labels_per_class 5000 --arch lenet5 --learning_rate 0.1 --momentum 0.9 --decay 0.0001 --epochs 200 --schedule 500 1000 1500 --gammas 0.1 0.1 0.1 --train mixup --mixup_alpha 1
+python main.py --dataset mnist --data_dir data/mnist/ --root_dir experiments/ --labels_per_class 5000 --arch lenet5 --learning_rate 0.1 --momentum 0.9 --decay 0.0001 --epochs 2000 --schedule 500 1000 1500 --gammas 0.1 0.1 0.1 --train mixup --mixup_alpha 1
 ```
 
 #### Manifold mixup LeNet5
 
 ```
-python main.py --dataset mnist --data_dir data/mnist/ --root_dir experiments/ --labels_per_class 5000 --arch lenet5 --learning_rate 0.1 --momentum 0.9 --decay 0.0001 --epochs 200 --schedule 500 1000 1500 --gammas 0.1 0.1 0.1 --train mixup_hidden --mixup_alpha 2.0
+python main.py --dataset mnist --data_dir data/mnist/ --root_dir experiments/ --labels_per_class 5000 --arch lenet5 --learning_rate 0.1 --momentum 0.9 --decay 0.0001 --epochs 2000 --schedule 500 1000 1500 --gammas 0.1 0.1 0.1 --train mixup_hidden --mixup_alpha 2.0
 ```
 
 
@@ -110,7 +114,8 @@ python main.py --dataset cifar100 --data_dir data/cifar100/ --root_dir experimen
 python main.py --dataset cifar100 --data_dir data/cifar100/ --root_dir experiments/ --labels_per_class 500 --arch preactresnet34 --learning_rate 0.1 --momentum 0.9 --decay 0.0001 --epochs 2000 --schedule 500 1000 1500 --gammas 0.1 0.1 0.1 --train vanilla
 ```
 
-####Mixup Preactresnet34
+#### Mixup Preactresnet34
+
 ```
 python main.py --dataset cifar100 --data_dir data/cifar100/ --root_dir experiments/ --labels_per_class 500 --arch preactresnet34 --learning_rate 0.1 --momentum 0.9 --decay 0.0001 --epochs 2000 --schedule 500 1000 1500 --gammas 0.1 0.1 0.1 --train mixup --mixup_alpha 1.0
 ```
@@ -160,7 +165,7 @@ python main.py --dataset svhn --data_dir data/svhn/ --root_dir experiments/ --la
 python main.py --dataset svhn --data_dir data/svhn/ --root_dir experiments/ --labels_per_class 7325 --arch preactresnet34 --learning_rate 0.1 --momentum 0.9 --decay 0.0001 --epochs 2000 --schedule 500 1000 1500 --gammas 0.1 0.1 0.1 --train vanilla
 ```
 
-####Mixup Preactresnet34
+#### Mixup Preactresnet34
 ```
 python main.py --dataset svhn --data_dir data/svhn/ --root_dir experiments/ --labels_per_class 7325 --arch preactresnet34 --learning_rate 0.1 --momentum 0.9 --decay 0.0001 --epochs 2000 --schedule 500 1000 1500 --gammas 0.1 0.1 0.1 --train mixup --mixup_alpha 1.0
 ```
@@ -184,7 +189,6 @@ python main.py --dataset svhn --data_dir data/svhn/ --root_dir experiments/ --la
 #### Manifold mixup WRN-28-10
 ```
 python main.py --dataset svhn --data_dir data/svhn/ --root_dir experiments/ --labels_per_class 7325 --arch wrn28_10 --learning_rate 0.1 --momentum 0.9 --decay 0.0001 --epochs 400 --schedule 200 300 --gammas 0.1 0.1 --train mixup_hidden --mixup_alpha 2.0
-
 ```
 
 ### How to run experiments for Tiny-Imagenet-200
@@ -212,7 +216,6 @@ python main.py --dataset tiny-imagenet-200 --data_dir data/tiny-imagenet-200/ --
 #### Manifold mixup Preactresnet18
 ```
 python main.py --dataset tiny-imagenet-200 --data_dir data/tiny-imagenet-200/ --root_dir experiments/ --labels_per_class 500 --arch preactresnet18 --learning_rate 0.1 --momentum 0.9 --decay 0.0001 --epochs 2000 --schedule 1000 1500 --gammas 0.1 0.1 --train mixup_hidden --mixup_alpha 0.2
-
 ```
 
 
