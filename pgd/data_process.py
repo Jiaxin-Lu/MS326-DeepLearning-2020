@@ -183,7 +183,7 @@ def attack_train_data(net, raw_train_data, batch_size, num_iter=100):
 
     adversarial_dataset = AdversarialDataset(adversarial_train_input, raw_train_label)
 
-    print("Generate adversarial data successfully!\n")
+    print("Generate adversarial data successfully!")
     return adversarial_dataset
 
 
@@ -200,7 +200,7 @@ def load_dataset(adversarial_dataset, test_data, num_classes, dataset, batch_siz
         sampler_train = SubsetRandomSampler(indices_train)
         return sampler_train
 
-    print("\nStart constructing adversarial dataset...")
+    print("\nStart constructing adversarial dataloader...")
     if dataset == 'tiny-imagenet-200':
         train_sampler = None
     else:
@@ -218,5 +218,5 @@ def load_dataset(adversarial_dataset, test_data, num_classes, dataset, batch_siz
         test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False,
                                                   num_workers=workers, pin_memory=True)
 
-    print("\nConstructing adversarial dataset successfully!")
+    print("Constructing adversarial dataset successfully!")
     return adversarial_dataloader, test_loader

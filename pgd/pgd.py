@@ -145,15 +145,20 @@ def main():
     recorder = checkpoint["recorder"]
     print("Load model-best checkpoint successfully!\n")
 
-    adversarial_dataset = attack_train_data(net, raw_train_data, args.batch_size, num_iter=100)
+    adv_dataset_dir = args.data_dir + "adv_data_" + exp_name + ".pth"
+    if os.path.exists(adv_dataset_dir):
+        print("Load adversarial data from {} directly...".format(adv_dataset_dir))
+        adversarial_dataset = torch.load(adv_dataset_dir)
+        print("Load adversarial data successfully!")
+    else:
+        adversarial_dataset = attack_train_data(net, raw_train_data, args.batch_size, num_iter=100)
+        print("Save adversarial data to {}...".format(adv_dataset_dir))
+        torch.save(adversarial_dataset, adv_dataset_dir)
+        print("Save adversarial data successfully!")
     train_loader, test_loader = load_dataset(adversarial_dataset, raw_test_data, num_classes,
                                              args.dataset, args.batch_size, 2, args.labels_per_class)
 
-    img_raw = raw_train_data[0][0][0].cpu().data.numpy()
-    img_adv = adversarial_dataset[0][0][0].cpu().data.numpy()
-    plt.imsave("img_raw.png", img_raw, cmap="gray")
-    plt.imsave("img_adv.png", img_adv, cmap="gray")
-    print(img_raw.shape, img_adv.shape)
+
     print("finish")
 
 
