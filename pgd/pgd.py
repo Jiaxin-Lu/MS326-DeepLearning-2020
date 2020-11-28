@@ -1,17 +1,12 @@
-# from __future__ import division
+from __future__ import division
 
 import argparse
-import os
 
 import matplotlib as mpl
-import torch
 
 import models
-
-import matplotlib.pyplot as plt
-import numpy as np
-
 from data_process import *
+from utils import *
 
 mpl.use('Agg')
 
@@ -92,7 +87,7 @@ def experiment_name(dataset, arch, epochs, dropout, batch_size, lr, momentum, de
     exp_name += '_mom_' + str(momentum)
     exp_name += '_decay_' + str(decay)
     exp_name += '_data_aug_' + str(data_aug)
-    if job_id != None:
+    if job_id is not None:
         exp_name += '_job_id_' + str(job_id)
     if add_name != '':
         exp_name += '_add_name_' + str(add_name)
@@ -114,11 +109,17 @@ def main():
                                mixup_alpha=args.mixup_alpha,
                                job_id=args.job_id,
                                add_name=args.add_name)
-    exp_dir = "../mixup/" + args.root_dir + "backup_" + exp_name
+    exp_dir = args.root_dir + exp_name
+    backup_model_dir = "../mixup/" + args.root_dir + "backup_" + exp_name
 
-    print("exp_name =", exp_name)
-    print("exp_dir =", exp_dir)
-    assert os.path.exists(exp_dir), "Experiment directory not found: " + exp_dir
+    if not os.path.exists(exp_dir):
+        os.makedirs(exp_dir)
+    log = open(os.path.join(exp_dir, 'log.txt'.format(args.manualSeed)), 'w')
+
+    print_log("exp_name = {}".format(exp_name), log)
+    print_log("exp_dir = {}".format(exp_dir), log)
+    print_log("backup_model_dir = {}".format(backup_model_dir), log)
+    assert os.path.exists(backup_model_dir), "Experiment directory not found: " + backup_model_dir
 
     per_img_std = False
     if args.dataset == 'tiny-imagenet-200':
@@ -138,157 +139,28 @@ def main():
     Load model-best checkpoint.
     checkpoint = {"epoch", "arch", "state_dict", "recorder", "state_dict"}
     """
-    print("\nStart loading model-best checkpoint...")
-    checkpoint = torch.load(exp_dir + "/model_best.pth.tar")
+    print_log("\nStart loading model-best checkpoint...", log)
+    checkpoint = torch.load(backup_model_dir + "/model_best.pth.tar")
     net.load_state_dict(checkpoint["state_dict"])
     optimizer.load_state_dict(checkpoint["optimizer"])
     recorder = checkpoint["recorder"]
-    print("Load model-best checkpoint successfully!\n")
+    print_log("Load model-best checkpoint successfully!\n", log)
 
     adv_dataset_dir = args.data_dir + "adv_data_" + exp_name + ".pth"
     if os.path.exists(adv_dataset_dir):
-        print("Load adversarial data from {} directly...".format(adv_dataset_dir))
+        print_log("Load adversarial data from {} directly...".format(adv_dataset_dir), log)
         adversarial_dataset = torch.load(adv_dataset_dir)
-        print("Load adversarial data successfully!")
+        print_log("Load adversarial data successfully!", log)
     else:
         adversarial_dataset = attack_train_data(net, raw_train_data, args.batch_size, num_iter=100)
-        print("Save adversarial data to {}...".format(adv_dataset_dir))
+        print_log("Save adversarial data to {}...".format(adv_dataset_dir), log)
         torch.save(adversarial_dataset, adv_dataset_dir)
-        print("Save adversarial data successfully!")
+        print_log("Save adversarial data successfully!", log)
     train_loader, test_loader = load_dataset(adversarial_dataset, raw_test_data, num_classes,
                                              args.dataset, args.batch_size, 2, args.labels_per_class)
 
-
-    print("finish")
+    print_log("\nfinish", log)
 
 
 if __name__ == '__main__':
     main()
-
-
-#
-# class_idx = json.load(open("./data/imagenet_class_index.json"))
-# idx2label = [class_idx[str(k)][1] for k in range(len(class_idx))]
-#
-# transform = transforms.Compose([
-#     transforms.Resize((299, 299)),
-#     transforms.ToTensor(),  # ToTensor : [0, 255] -> [0, 1]
-# ])
-#
-#
-# def image_folder_custom_label(root, transform, custom_label):
-#     # custom_label
-#     # type : List
-#     # index -> label
-#     # ex) ['tench', 'goldfish', 'great_white_shark', 'tiger_shark']
-#
-#     old_data = dsets.ImageFolder(root=root, transform=transform)
-#     old_classes = old_data.classes
-#
-#     label2idx = {}
-#
-#     for i, item in enumerate(idx2label):
-#         label2idx[item] = i
-#
-#     new_data = dsets.ImageFolder(root=root, transform=transform,
-#                                  target_transform=lambda x: custom_label.index(old_classes[x]))
-#     new_data.classes = idx2label
-#     new_data.class_to_idx = label2idx
-#
-#     return new_data
-#
-#
-# normal_data = image_folder_custom_label(root='./data/imagenet', transform=transform, custom_label=idx2label)
-# normal_loader = Data.DataLoader(normal_data, batch_size=1, shuffle=False)
-#
-#
-# def imshow(img, title):
-#     npimg = img.numpy()
-#     fig = plt.figure(figsize=(5, 15))
-#     plt.imshow(np.transpose(npimg, (1, 2, 0)))
-#     plt.title(title)
-#     plt.show()
-#
-#
-# normal_iter = iter(normal_loader)
-# images, labels = normal_iter.next()
-#
-# print("True Image & True Label")
-# imshow(torchvision.utils.make_grid(images, normalize=True), [normal_data.classes[i] for i in labels])
-#
-# # ## 4. Download the Inception v3
-#
-#
-# model = models.inception_v3(pretrained=True).to(device)
-#
-# print("True Image & Predicted Label")
-#
-# model.eval()
-#
-# correct = 0
-# total = 0
-#
-# for images, labels in normal_loader:
-#     images = images.to(device)
-#     labels = labels.to(device)
-#     outputs = model(images)
-#
-#     _, pre = torch.max(outputs.data, 1)
-#
-#     total += 1
-#     correct += (pre == labels).sum()
-#
-#     imshow(torchvision.utils.make_grid(images.cpu().data, normalize=True), [normal_data.classes[i] for i in pre])
-#
-# print('Accuracy of test text: %f %%' % (100 * float(correct) / total))
-#
-#
-# # ## 5. Adversarial Attack
-#
-# # $$x^{t+1} = \Pi_{x+S}(x^t+\alpha sgn(\bigtriangledown_x L(\theta, x, y)))$$
-# # * $S$ : a set of allowed perturbations
-#
-# # PGD Attack
-# # MNIST init
-# def pgd_attack(model, images, labels, eps=0.3, alpha=2 / 255, iters=40):
-#     images = images.to(device)
-#     labels = labels.to(device)
-#     loss = nn.CrossEntropyLoss()
-#
-#     ori_images = images.data
-#
-#     for i in range(iters):
-#         images.requires_grad = True
-#         outputs = model(images)
-#
-#         model.zero_grad()
-#         cost = loss(outputs, labels).to(device)
-#         cost.backward()
-#
-#         adv_images = images + alpha * images.grad.sign()
-#         eta = torch.clamp(adv_images - ori_images, min=-eps, max=eps)
-#         images = torch.clamp(ori_images + eta, min=0, max=1).detach_()
-#
-#     return images
-#
-#
-# print("Attack Image & Predicted Label")
-#
-# model.eval()
-#
-# correct = 0
-# total = 0
-#
-# for images, labels in normal_loader:
-#     images = pgd_attack(model, images, labels)
-#     labels = labels.to(device)
-#     outputs = model(images)
-#
-#     _, pre = torch.max(outputs.data, 1)
-#
-#     total += 1
-#     correct += (pre == labels).sum()
-#
-#     imshow(torchvision.utils.make_grid(images.cpu().data, normalize=True), [normal_data.classes[i] for i in pre])
-#
-# print('Accuracy of test text: %f %%' % (100 * float(correct) / total))

@@ -8,4 +8,4 @@
 
 ### How to run Python scripts in Pycharm?
 
-You should mark the directories "mixup" and "pgd" as "Sources Root" in Pycharm.
+You should mark the directories "MS326-Project-2020", "mixup" and "pgd" as "Sources Root" in Pycharm.

@@ -122,12 +122,6 @@ def experiment_name_non_mnist(dataset='cifar10',
     return exp_name
 
 
-def print_log(print_string, log):
-    print("{}".format(print_string))
-    log.write('{}\n'.format(print_string))
-    log.flush()
-
-
 def save_checkpoint(state, is_best, save_path, filename):
     filename = os.path.join(save_path, filename)
     torch.save(state, filename)
