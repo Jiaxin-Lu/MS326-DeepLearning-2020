@@ -1,0 +1,20 @@
+exp_name = cifar10_arch_preactresnet18_train_mixup_hidden_m_alpha_2.0_do_False_eph_2000_bs_100_lr_0.1_mom_0.9_decay_0.0001_data_aug_1_job_id_
+exp_dir = experiments/cifar10_arch_preactresnet18_train_mixup_hidden_m_alpha_2.0_do_False_eph_2000_bs_100_lr_0.1_mom_0.9_decay_0.0001_data_aug_1_job_id_
+backup_model_dir = ../mixup/experiments/backup_cifar10_arch_preactresnet18_train_mixup_hidden_m_alpha_2.0_do_False_eph_2000_bs_100_lr_0.1_mom_0.9_decay_0.0001_data_aug_1_job_id_
+
+Start loading model-best checkpoint...
+Load model-best checkpoint successfully!
+
+Start generating adversarial data...
+Generate adversarial data successfully!
+
+Save adversarial data to data/cifar10/adv_data_cifar10_arch_preactresnet18_train_mixup_hidden_m_alpha_2.0_do_False_eph_2000_bs_100_lr_0.1_mom_0.9_decay_0.0001_data_aug_1_job_id_.pth...
+Save adversarial data successfully!
+
+Start constructing adversarial dataloader...
+Constructing adversarial dataset successfully!
+
+Start evaluating the effect of PGD attack...
+**Adversarial attack** Prec@1 0.856 Prec@5 2.520 Error@1 99.144 Loss: 17.727 
+
+finish

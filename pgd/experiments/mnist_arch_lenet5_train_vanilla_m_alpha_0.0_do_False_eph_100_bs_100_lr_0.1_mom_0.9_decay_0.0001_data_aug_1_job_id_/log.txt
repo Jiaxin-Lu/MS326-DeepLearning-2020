@@ -1,0 +1,17 @@
+exp_name = mnist_arch_lenet5_train_vanilla_m_alpha_0.0_do_False_eph_100_bs_100_lr_0.1_mom_0.9_decay_0.0001_data_aug_1_job_id_
+exp_dir = experiments/mnist_arch_lenet5_train_vanilla_m_alpha_0.0_do_False_eph_100_bs_100_lr_0.1_mom_0.9_decay_0.0001_data_aug_1_job_id_
+backup_model_dir = ../mixup/experiments/backup_mnist_arch_lenet5_train_vanilla_m_alpha_0.0_do_False_eph_100_bs_100_lr_0.1_mom_0.9_decay_0.0001_data_aug_1_job_id_
+
+Start loading model-best checkpoint...
+Load model-best checkpoint successfully!
+
+Load adversarial data from data/mnist/adv_data_mnist_arch_lenet5_train_vanilla_m_alpha_0.0_do_False_eph_100_bs_100_lr_0.1_mom_0.9_decay_0.0001_data_aug_1_job_id_.pth directly...
+Load adversarial data successfully!
+
+Start constructing adversarial dataloader...
+Constructing adversarial dataset successfully!
+
+Start evaluating the effect of PGD attack...
+**Adversarial attack** Prec@1 0.002 Prec@5 63.524Error@1 99.998 Loss: 19.041 
+
+finish
