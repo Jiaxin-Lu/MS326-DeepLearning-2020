@@ -1,7 +1,5 @@
 from __future__ import division
 
-import sys
-
 import matplotlib as mpl
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
@@ -15,8 +13,8 @@ else:
     import _pickle as pickle
 from collections import OrderedDict
 from load_data import *
-from helpers import *
-from plots import *
+
+import argparse
 
 mpl.use('Agg')
 

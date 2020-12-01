@@ -1,13 +1,19 @@
 import os
+import random
+import shutil
+import sys
 import time
 
 import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from torch.autograd import Variable
 
-import random
-import matplotlib.pyplot as plt
+if sys.version_info[0] < 3:
+    import cPickle as pickle
+else:
+    import _pickle as pickle
 
 matplotlib.use('agg')
 
@@ -247,5 +253,34 @@ def create_val_folder(data_set_path):
             os.rename(os.path.join(path, img), os.path.join(newpath, img))
 
 
-if __name__ == "__main__":
-    create_val_folder('data/tiny-imagenet-200')  # Call method to create validation image folders
+def plotting(exp_dir):
+    # Load the training log dictionary:
+    train_dict = pickle.load(open(os.path.join(exp_dir, 'log.pkl'), 'rb'))
+
+    plt.plot(np.asarray(train_dict['train_loss']), label='train_loss')
+    plt.plot(np.asarray(train_dict['test_loss']), label='test_loss')
+
+    plt.xlabel('evaluation step')
+    plt.ylabel('metrics')
+    plt.tight_layout()
+    plt.legend(loc='upper right')
+    plt.savefig(os.path.join(exp_dir, 'loss.png'))
+    plt.clf()
+
+    plt.plot(np.asarray(train_dict['train_acc']), label='train_acc')
+    plt.plot(np.asarray(train_dict['test_acc']), label='test_acc')
+
+    plt.xlabel('evaluation step')
+    plt.ylabel('metrics')
+    plt.tight_layout()
+    plt.legend(loc='upper right')
+    plt.savefig(os.path.join(exp_dir, 'acc.png'))
+    plt.clf()
+    return
+
+
+def copy_script_to_folder(caller_path, folder):
+    script_filename = caller_path.split('/')[-1]
+    script_relative_path = os.path.join(folder, script_filename)
+    # Copying script
+    shutil.copy(caller_path, script_relative_path)
