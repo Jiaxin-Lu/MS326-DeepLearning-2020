@@ -318,10 +318,9 @@ def main():
         #     print_log("\nSave adversarial data to {}...".format(adv_dataset_dir), log)
         #     torch.save(adversarial_dataset, adv_dataset_dir)
         #     print_log("Save adversarial data successfully!", log)
-        adversarial_dataset = attack_train_data(t, log, net, raw_train_data, args.batch_size, num_iter=100)
-
+        adversarial_dataset = attack_train_data(t, log, net, raw_train_data, args.batch_size, num_iter=10)
         adversarial_dataset.inputs = adversarial_dataset.inputs.cpu()
-        adversarial_dataset.labels = adversarial_dataset.labels.cpu()
+
         adv_loader, test_loader = load_dataset(t, adversarial_dataset, raw_test_data, num_classes,
                                                args.dataset, args.batch_size, 2, args.labels_per_class, log)
 
@@ -341,12 +340,11 @@ def main():
         else:
             os.makedirs(iter_dir)
 
-        # for epoch in range(args.start_epoch, args.epochs):
-        for epoch in range(0, 10):
+        for epoch in range(args.start_epoch, args.epochs):
             current_learning_rate = adjust_learning_rate(optimizer, epoch, args.gammas, args.schedule)
 
             need_hour, need_mins, need_secs = convert_secs2time(epoch_time.avg * (args.epochs - epoch))
-            need_time = '[Need: {:02d}:{:02d}:{:02d}]'.format(t, need_hour, need_mins, need_secs)
+            need_time = '[Need: {:02d}:{:02d}:{:02d}]'.format(need_hour, need_mins, need_secs)
 
             print_log(
                 ('\n[iter {}] ==>>{:s} [Epoch={:03d}/{:03d}] '

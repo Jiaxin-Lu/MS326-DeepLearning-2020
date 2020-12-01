@@ -134,7 +134,7 @@ def attack_single_batch_input(net, images, labels, num_iter, eps=0.3):
     alpha = 2.5 * eps / num_iter
 
     images = images.cuda()
-    labels = labels.cuda()
+    labels = torch.tensor(labels).cuda()
     loss_function = nn.CrossEntropyLoss()
 
     ori_images = images.data
@@ -168,7 +168,7 @@ def attack_train_data(log, net, raw_train_data, batch_size, num_iter=100):
         raw_train_input.append(image.reshape(1, c, h, w))
         raw_train_label.append(label)
     raw_train_input = torch.cat(raw_train_input, dim=0)
-    raw_train_label = torch.tensor(raw_train_label)
+    raw_train_label = raw_train_label
 
     adversarial_train_input = []
     for i in range(0, len(raw_train_data), batch_size):
