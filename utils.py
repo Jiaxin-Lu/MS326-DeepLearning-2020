@@ -255,7 +255,7 @@ def create_val_folder(data_set_path):
 
 def plotting(exp_dir):
     # Load the training log dictionary:
-    train_dict = pickle.load(open(os.path.join(exp_dir, 'log.pkl'), 'rb'))
+    train_dict = pickle.load(open(os.path.join(exp_dir, 'pickle_log.pkl'), 'rb'))
 
     plt.plot(np.asarray(train_dict['train_loss']), label='train_loss')
     plt.plot(np.asarray(train_dict['test_loss']), label='test_loss')
