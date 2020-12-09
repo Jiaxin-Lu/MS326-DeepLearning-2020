@@ -325,7 +325,7 @@ def main():
         adv_loader, test_loader = load_dataset(t, adversarial_dataset, raw_test_data, num_classes,
                                                args.dataset, args.batch_size, 2, args.labels_per_class, log)
 
-        validate(t, adv_loader, net, "Adversarial attack", log)
+        validate(t, adv_loader, net, "Adversarial attack before training", log)
 
         # Train!
         start_time = time.time()
@@ -389,6 +389,8 @@ def main():
 
             pickle.dump(train_log, open(os.path.join(iter_dir, 'pickle_log.pkl'), 'wb'))
             plotting(iter_dir)
+
+        validate(t, adv_loader, net, "Adversarial attack after training", log)
 
     print_log("\nfinish", log)
     log.close()
