@@ -41,6 +41,7 @@ parser.add_argument('--arch', metavar='ARCH', default='resnext29_8_64', choices=
 parser.add_argument('--initial_channels', type=int, default=64, choices=(16, 64))
 # Optimization options
 parser.add_argument('--epochs', type=int, default=300, help='Number of epochs to train.')
+parser.add_argument('--adv_epochs', type=int, default=50, help='Number of epochs to train in adversarial training.')
 parser.add_argument('--train', type=str, default='vanilla', choices=['vanilla', 'mixup', 'mixup_hidden', 'cutout'])
 parser.add_argument('--mixup_alpha', type=float, default=0.0, help='alpha parameter for mixup')
 
@@ -318,7 +319,7 @@ def main():
         #     print_log("\nSave adversarial data to {}...".format(adv_dataset_dir), log)
         #     torch.save(adversarial_dataset, adv_dataset_dir)
         #     print_log("Save adversarial data successfully!", log)
-        adversarial_dataset = attack_train_data(t, log, net, raw_train_data, args.batch_size, num_iter=10)
+        adversarial_dataset = attack_train_data(t, log, net, raw_train_data, args.batch_size, num_iter=20)
         adversarial_dataset.inputs = adversarial_dataset.inputs.cpu()
 
         adv_loader, test_loader = load_dataset(t, adversarial_dataset, raw_test_data, num_classes,
@@ -340,7 +341,7 @@ def main():
         else:
             os.makedirs(iter_dir)
 
-        for epoch in range(args.start_epoch, args.epochs):
+        for epoch in range(args.start_epoch, args.adv_epochs):
             current_learning_rate = adjust_learning_rate(optimizer, epoch, args.gammas, args.schedule)
 
             need_hour, need_mins, need_secs = convert_secs2time(epoch_time.avg * (args.epochs - epoch))
@@ -348,7 +349,7 @@ def main():
 
             print_log(
                 ('\n[iter {}] ==>>{:s} [Epoch={:03d}/{:03d}] '
-                 '{:s} [learning_rate={:6.4f}]').format(t, time_string(), epoch, args.epochs,
+                 '{:s} [learning_rate={:6.4f}]').format(t, time_string(), epoch, args.adv_epochs,
                                                         need_time, current_learning_rate)
                 + ' [Best : Accuracy={:.2f}, Error={:.2f}]'.format(recorder.max_accuracy(False),
                                                                    100 - recorder.max_accuracy(False)), log)
