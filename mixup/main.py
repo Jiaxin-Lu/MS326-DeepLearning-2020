@@ -413,7 +413,7 @@ def main():
         train_log['test_loss'] = test_loss
         train_log['test_acc'] = test_acc
 
-        pickle.dump(train_log, open(os.path.join(exp_dir, 'log.pkl'), 'wb'))
+        pickle.dump(train_log, open(os.path.join(exp_dir, 'pickle_log.pkl'), 'wb'))
         plotting(exp_dir)
 
     log.close()
