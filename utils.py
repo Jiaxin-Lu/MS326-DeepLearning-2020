@@ -259,6 +259,8 @@ def plotting(exp_dir):
 
     plt.plot(np.asarray(train_dict['train_loss']), label='train_loss')
     plt.plot(np.asarray(train_dict['test_loss']), label='test_loss')
+    plt.plot(np.asarray(train_dict['attack_before_training_loss']), label='attack_before_training_loss')
+    plt.plot(np.asarray(train_dict['attack_after_training_loss']), label='attack_after_training_loss')
 
     plt.xlabel('evaluation step')
     plt.ylabel('metrics')
@@ -269,6 +271,8 @@ def plotting(exp_dir):
 
     plt.plot(np.asarray(train_dict['train_acc']), label='train_acc')
     plt.plot(np.asarray(train_dict['test_acc']), label='test_acc')
+    plt.plot(np.asarray(train_dict['attack_before_training_acc']), label='attack_before_training_acc')
+    plt.plot(np.asarray(train_dict['attack_after_training_acc']), label='attack_after_training_acc')
 
     plt.xlabel('evaluation step')
     plt.ylabel('metrics')

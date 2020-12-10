@@ -155,7 +155,7 @@ bce_loss = nn.BCELoss().cuda()
 softmax = nn.Softmax(dim=1).cuda()
 
 
-def train(train_loader, model, optimizer, epoch, args, log):
+def train_with_attack(train_loader, model, optimizer, epoch, args, log):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -213,14 +213,14 @@ def train(train_loader, model, optimizer, epoch, args, log):
                 epoch, i, len(train_loader), batch_time=batch_time,
                 data_time=data_time, loss=losses, top1=top1, top5=top5) + time_string(), log)
 
-    print_log(('[epoch {}] **Train** Prec@1 {top1.avg:.3f} '
+    print_log(('[Epoch {}] **Train** Prec@1 {top1.avg:.3f} '
                'Prec@5 {top5.avg:.3f} Error@1 {error1:.3f}').format(epoch, top1=top1, top5=top5, error1=100 - top1.avg),
               log)
     return top1.avg, top5.avg, losses.avg
 
 
 def validate(epoch, val_loader, model, mode, log):
-    print_log("\n[epoch {}] Start validation ({})...".format(epoch, mode), log)
+    print_log("\n[Epoch {}] Start validation ({})...".format(epoch, mode), log)
     criterion = nn.CrossEntropyLoss().cuda()
     losses = AverageMeter()
     top1 = AverageMeter()
@@ -247,7 +247,7 @@ def validate(epoch, val_loader, model, mode, log):
         top5.update(prec5.item(), input_.size(0))
 
     print_log(
-        ('[epoch {}] **{}** Prec@1 {top1.avg:.3f} Prec@5 {top5.avg:.3f}'
+        ('[Epoch {}] **{}** Prec@1 {top1.avg:.3f} Prec@5 {top5.avg:.3f}'
          + ' Error@1 {error1:.3f} Loss: {losses.avg:.3f} ').format(
             epoch, mode, top1=top1, top5=top5, error1=100 - top1.avg, losses=losses), log)
 
@@ -300,8 +300,7 @@ def main():
 
     optimizer = torch.optim.SGD(net.parameters(), args.learning_rate, momentum=args.momentum,
                                 weight_decay=args.decay, nesterov=True)
-    recorder = RecorderMeter(args.epochs)
-    best_acc = 0
+    recorder = RecorderMeter(args.adv_epochs)
 
     start_time = time.time()
     epoch_time = AverageMeter()
@@ -309,33 +308,30 @@ def main():
     train_acc = []
     test_loss = []
     test_acc = []
+    attack_bef_acc = []
+    attack_bef_loss = []
+    attack_aft_acc = []
+    attack_aft_loss = []
 
     for epoch in range(1, args.adv_epochs + 1):
-        print_log("\n======== ITERATION {} ========".format(epoch), log)
+        print_log("\n======== EPOCH {} ========".format(epoch), log)
 
         """
         Load model-best checkpoint.
         checkpoint = {"epoch", "arch", "state_dict", "recorder", "state_dict"}
         """
 
-        adversarial_dataset = attack_test_data(epoch, log, net, raw_test_data, 1024, num_iter=7)
-        adversarial_dataset.inputs = adversarial_dataset.inputs.cpu()
+        adv_test_dataset = attack_test_data(epoch, log, net, raw_test_data, 1024, num_iter=7)
+        adv_test_dataset.inputs = adv_test_dataset.inputs.cpu()
 
-        train_loader, test_loader, adv_loader, _ = load_dataset(epoch, raw_train_data, raw_test_data
-                , adversarial_dataset, num_classes,args.dataset, args.batch_size, 2, args.labels_per_class, log)
+        train_loader, test_loader, adv_test_loader = load_dataset(epoch,
+                                                                  raw_train_data, raw_test_data, adv_test_dataset,
+                                                                  num_classes, args.dataset, args.batch_size, 2,
+                                                                  args.labels_per_class, log)
 
-
-        #
-        validate(epoch, adv_loader, net, "Adversarial attack before training", log)
-
-        iter_dir = exp_dir + "/iter" + str(epoch)
-        if os.path.exists(iter_dir):
-            clear_directory(iter_dir)
-        else:
-            os.makedirs(iter_dir)
+        at_bef_acc, at_bef_loss = validate(epoch, adv_test_loader, net, "Adversarial attack before training", log)
 
         # Train!
-
         current_learning_rate = adjust_learning_rate(optimizer, epoch, args.gammas, args.schedule)
 
         need_hour, need_mins, need_secs = convert_secs2time(epoch_time.avg * (args.adv_epochs - epoch))
@@ -349,30 +345,27 @@ def main():
                                                                100 - recorder.max_accuracy(False)), log)
 
         # train for one epoch
-        tr_acc, tr_acc5, tr_los = train(train_loader, net, optimizer, epoch, args, log)
+        tr_acc, tr_acc5, tr_los = train_with_attack(train_loader, net, optimizer, epoch, args, log)
 
         # evaluate on validation set
         val_acc, val_los = validate(epoch, test_loader, net, "Test", log)
+        at_aft_acc, at_aft_loss = validate(epoch, adv_test_loader, net, "Adversarial attack after training", log)
 
         train_loss.append(tr_los)
         train_acc.append(tr_acc)
         test_loss.append(val_los)
         test_acc.append(val_acc)
+        attack_bef_loss.append(at_bef_loss)
+        attack_bef_acc.append(at_bef_acc)
+        attack_aft_loss.append(at_aft_loss)
+        attack_aft_acc.append(at_aft_acc)
 
         recorder.update(epoch, tr_los, tr_acc, val_los, val_acc)
-
-        is_best = False
-        if val_acc > best_acc:
-            is_best = True
-            best_acc = val_acc
-
-        if is_best:
-            save_checkpoint(net.state_dict(), iter_dir, "model_best.pth.tar")
 
         # measure elapsed time
         epoch_time.update(time.time() - start_time)
         start_time = time.time()
-        result_png_path = os.path.join(iter_dir, 'results.png')
+        result_png_path = os.path.join(exp_dir, 'results.png')
         recorder.plot_curve(result_png_path)
 
         train_log = OrderedDict()
@@ -380,10 +373,13 @@ def main():
         train_log['train_acc'] = train_acc
         train_log['test_loss'] = test_loss
         train_log['test_acc'] = test_acc
+        train_log['attack_before_training_loss'] = attack_bef_loss
+        train_log['attack_before_training_acc'] = attack_bef_acc
+        train_log['attack_after_training_loss'] = attack_aft_loss
+        train_log['attack_after_training_acc'] = attack_aft_acc
 
-        pickle.dump(train_log, open(os.path.join(iter_dir, 'pickle_log.pkl'), 'wb'))
-        plotting(iter_dir)
-        validate(epoch, adv_loader, net, "Adversarial attack after training", log)
+        pickle.dump(train_log, open(os.path.join(exp_dir, 'pickle_log.pkl'), 'wb'))
+        plotting(exp_dir)
     print_log("\nfinish", log)
     log.close()
 

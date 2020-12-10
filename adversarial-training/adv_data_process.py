@@ -16,7 +16,7 @@ class AdversarialDataset(Dataset):
         self.targets = labels
 
     def __len__(self):
-        return self.targets.shape[0]
+        return len(self.targets)
 
     def __getitem__(self, index) -> T_co:
         return self.inputs[index], self.targets[index]
@@ -160,7 +160,7 @@ def attack_single_batch_input(net, images, labels, num_iter=7, eps=8 / 255, alph
 def attack_test_data(t, log, net, raw_test_data, batch_size, num_iter=7):
     net.eval()
 
-    print_log("[iter {}] Start generating adversarial data...".format(t), log)
+    print_log("[Epoch {}] Start generating adversarial data...".format(t), log)
     c, h, w = raw_test_data[0][0].shape
     raw_train_input = []
     raw_train_label = []
@@ -177,19 +177,19 @@ def attack_test_data(t, log, net, raw_test_data, batch_size, num_iter=7):
     adversarial_train_input = []
     for i in range(0, len(raw_test_data), batch_size):
         print(" " + str(i))
-        images = raw_train_input[i:i + batch_size]
-        labels = raw_train_label[i:i + batch_size]
+        images = raw_train_input[i:min(i + batch_size, len(raw_test_data))]
+        labels = raw_train_label[i:min(i + batch_size, len(raw_test_data))]
         adversarial_batch_input = attack_single_batch_input(net, images, labels, num_iter, eps=8 / 255)
         adversarial_train_input.append(adversarial_batch_input)
     adversarial_train_input = torch.cat(adversarial_train_input, dim=0)
 
     adversarial_dataset = AdversarialDataset(adversarial_train_input, raw_train_label)
 
-    print_log("[iter {}] Generate adversarial data successfully!".format(t), log)
+    print_log("[Epoch {}] Generate adversarial data successfully!".format(t), log)
     return adversarial_dataset
 
 
-def load_dataset(t, train_data, test_data, adversarial_test, num_classes, dataset, batch_size, workers, labels_per_class, log):
+def load_dataset(t, train_data, test_data, adv_test_data, num_classes, dataset, batch_size, workers, labels_per_class, log):
     def get_sampler(labels, labels_per_class=None):
         # Only choose digits in num_classes
         (indices,) = np.where(reduce(__or__, [labels == i for i in np.arange(num_classes)]))
@@ -202,7 +202,7 @@ def load_dataset(t, train_data, test_data, adversarial_test, num_classes, datase
         sampler_train = SubsetRandomSampler(indices_train)
         return sampler_train
 
-    print_log("\n[iter {}] Start constructing adversarial dataloader...".format(t), log)
+    print_log("\n[Epoch {}] Start constructing dataloader...".format(t), log)
     if dataset == 'tiny-imagenet-200':
         train_sampler = None
     else:
@@ -210,20 +210,19 @@ def load_dataset(t, train_data, test_data, adversarial_test, num_classes, datase
 
     if dataset == 'tiny-imagenet-200':
         train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True,
-                                                             num_workers=workers, pin_memory=True)
+                                                   num_workers=workers, pin_memory=True)
         test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False,
                                                   num_workers=workers, pin_memory=True)
-        adv_loader = torch.utils.data.DataLoader(adversarial_test, batch_size=batch_size, shuffle=True,
+        adv_loader = torch.utils.data.DataLoader(adv_test_data, batch_size=batch_size, shuffle=False,
                                                  num_workers=workers, pin_memory=True)
     else:
         train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size,
-                                                             sampler=train_sampler, shuffle=False,
-                                                             num_workers=workers, pin_memory=True)
-        test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=True,
+                                                   sampler=train_sampler, shuffle=False,
+                                                   num_workers=workers, pin_memory=True)
+        test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False,
                                                   num_workers=workers, pin_memory=True)
-        adv_loader = torch.utils.data.DataLoader(adversarial_test, batch_size=batch_size,
-                                                 sampler=train_sampler, shuffle=False,
+        adv_loader = torch.utils.data.DataLoader(adv_test_data, batch_size=batch_size, shuffle=False,
                                                  num_workers=workers, pin_memory=True)
 
-    print_log("[iter {}] Constructing adversarial dataset successfully!".format(t), log)
+    print_log("[Epoch {}] Constructing adversarial dataset successfully!".format(t), log)
     return train_loader, test_loader, adv_loader
