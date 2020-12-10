@@ -41,7 +41,7 @@ parser.add_argument('--arch', metavar='ARCH', default='resnext29_8_64', choices=
 parser.add_argument('--initial_channels', type=int, default=64, choices=(16, 64))
 # Optimization options
 parser.add_argument('--epochs', type=int, default=300, help='Number of epochs to train.')
-parser.add_argument('--adv_epochs', type=int, default=50, help='Number of epochs to train in adversarial training.')
+parser.add_argument('--adv_epochs', type=int, default=500, help='Number of epochs to train in adversarial training.')
 parser.add_argument('--train', type=str, default='vanilla', choices=['vanilla', 'mixup', 'mixup_hidden', 'cutout'])
 parser.add_argument('--mixup_alpha', type=float, default=0.0, help='alpha parameter for mixup')
 
@@ -155,7 +155,7 @@ bce_loss = nn.BCELoss().cuda()
 softmax = nn.Softmax(dim=1).cuda()
 
 
-def train(t, train_loader, model, optimizer, epoch, args, log):
+def train(train_loader, model, optimizer, epoch, args, log):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -169,6 +169,9 @@ def train(t, train_loader, model, optimizer, epoch, args, log):
     for i, (input, target) in enumerate(train_loader):
         target = target.long()
         input, target = input.cuda(), target.cuda()
+
+        input = attack_single_batch_input(model, input, target)
+
         data_time.update(time.time() - end)
         if args.train == 'mixup':
             input_var, target_var = Variable(input), Variable(target)
@@ -201,23 +204,23 @@ def train(t, train_loader, model, optimizer, epoch, args, log):
         end = time.time()
 
         if i % args.print_freq == 0:
-            print_log('[iter {}] Epoch: [{:03d}][{:03d}/{:03d}]   '
+            print_log(' Epoch: [{:03d}][{:03d}/{:03d}]   '
                       'Time {batch_time.val:.3f} ({batch_time.avg:.3f})   '
                       'Data {data_time.val:.3f} ({data_time.avg:.3f})   '
                       'Loss {loss.val:.4f} ({loss.avg:.4f})   '
                       'Prec@1 {top1.val:.3f} ({top1.avg:.3f})   '
                       'Prec@5 {top5.val:.3f} ({top5.avg:.3f})   '.format(
-                t, epoch, i, len(train_loader), batch_time=batch_time,
+                epoch, i, len(train_loader), batch_time=batch_time,
                 data_time=data_time, loss=losses, top1=top1, top5=top5) + time_string(), log)
 
-    print_log(('[iter {}] **Train** Prec@1 {top1.avg:.3f} '
-               'Prec@5 {top5.avg:.3f} Error@1 {error1:.3f}').format(t, top1=top1, top5=top5, error1=100 - top1.avg),
+    print_log(('[epoch {}] **Train** Prec@1 {top1.avg:.3f} '
+               'Prec@5 {top5.avg:.3f} Error@1 {error1:.3f}').format(epoch, top1=top1, top5=top5, error1=100 - top1.avg),
               log)
     return top1.avg, top5.avg, losses.avg
 
 
-def validate(t, val_loader, model, mode, log):
-    print_log("\n[iter {}] Start validation ({})...".format(t, mode), log)
+def validate(epoch, val_loader, model, mode, log):
+    print_log("\n[epoch {}] Start validation ({})...".format(epoch, mode), log)
     criterion = nn.CrossEntropyLoss().cuda()
     losses = AverageMeter()
     top1 = AverageMeter()
@@ -244,9 +247,9 @@ def validate(t, val_loader, model, mode, log):
         top5.update(prec5.item(), input_.size(0))
 
     print_log(
-        ('[iter {}] **{}** Prec@1 {top1.avg:.3f} Prec@5 {top5.avg:.3f}'
+        ('[epoch {}] **{}** Prec@1 {top1.avg:.3f} Prec@5 {top5.avg:.3f}'
          + ' Error@1 {error1:.3f} Loss: {losses.avg:.3f} ').format(
-            t, mode, top1=top1, top5=top5, error1=100 - top1.avg, losses=losses), log)
+            epoch, mode, top1=top1, top5=top5, error1=100 - top1.avg, losses=losses), log)
 
     return top1.avg, losses.avg
 
@@ -295,103 +298,92 @@ def main():
     net.load_state_dict(checkpoint["state_dict"])
     print_log("Load model-best checkpoint successfully!", log)
 
-    num_iter = 3
-    for t in range(1, num_iter + 1):
-        print_log("\n======== ITERATION {} ========".format(t), log)
+    optimizer = torch.optim.SGD(net.parameters(), args.learning_rate, momentum=args.momentum,
+                                weight_decay=args.decay, nesterov=True)
+    recorder = RecorderMeter(args.epochs)
+    best_acc = 0
+
+    start_time = time.time()
+    epoch_time = AverageMeter()
+    train_loss = []
+    train_acc = []
+    test_loss = []
+    test_acc = []
+
+    for epoch in range(1, args.adv_epochs + 1):
+        print_log("\n======== ITERATION {} ========".format(epoch), log)
 
         """
         Load model-best checkpoint.
         checkpoint = {"epoch", "arch", "state_dict", "recorder", "state_dict"}
         """
 
-        optimizer = torch.optim.SGD(net.parameters(), args.learning_rate, momentum=args.momentum,
-                                    weight_decay=args.decay, nesterov=True)
-        recorder = RecorderMeter(args.epochs)
-        best_acc = 0
-
-        # adv_dataset_dir = exp_dir + "/iter" + str(t) + "/" + "adv_data_" + exp_name + ".pth"
-        # if os.path.exists(adv_dataset_dir):
-        #     print_log("\n Load adversarial data from {} directly...".format(adv_dataset_dir), log)
-        #     adversarial_dataset = torch.load(adv_dataset_dir)
-        #     print_log(" Load adversarial data successfully!", log)
-        # else:
-        #     adversarial_dataset = attack_train_data(log, net, raw_train_data, args.batch_size, num_iter=100)
-        #     print_log("\nSave adversarial data to {}...".format(adv_dataset_dir), log)
-        #     torch.save(adversarial_dataset, adv_dataset_dir)
-        #     print_log("Save adversarial data successfully!", log)
-        adversarial_dataset = attack_train_data(t, log, net, raw_train_data, args.batch_size, num_iter=20)
+        adversarial_dataset = attack_test_data(epoch, log, net, raw_test_data, 1024, num_iter=7)
         adversarial_dataset.inputs = adversarial_dataset.inputs.cpu()
 
-        adv_loader, test_loader = load_dataset(t, adversarial_dataset, raw_test_data, num_classes,
-                                               args.dataset, args.batch_size, 2, args.labels_per_class, log)
+        train_loader, test_loader, adv_loader, _ = load_dataset(epoch, raw_train_data, raw_test_data
+                , adversarial_dataset, num_classes,args.dataset, args.batch_size, 2, args.labels_per_class, log)
 
-        validate(t, adv_loader, net, "Adversarial attack before training", log)
 
-        # Train!
-        start_time = time.time()
-        epoch_time = AverageMeter()
-        train_loss = []
-        train_acc = []
-        test_loss = []
-        test_acc = []
+        #
+        validate(epoch, adv_loader, net, "Adversarial attack before training", log)
 
-        iter_dir = exp_dir + "/iter" + str(t)
+        iter_dir = exp_dir + "/iter" + str(epoch)
         if os.path.exists(iter_dir):
             clear_directory(iter_dir)
         else:
             os.makedirs(iter_dir)
 
-        for epoch in range(args.start_epoch, args.adv_epochs):
-            current_learning_rate = adjust_learning_rate(optimizer, epoch, args.gammas, args.schedule)
+        # Train!
 
-            need_hour, need_mins, need_secs = convert_secs2time(epoch_time.avg * (args.adv_epochs - epoch))
-            need_time = '[Need: {:02d}:{:02d}:{:02d}]'.format(need_hour, need_mins, need_secs)
+        current_learning_rate = adjust_learning_rate(optimizer, epoch, args.gammas, args.schedule)
 
-            print_log(
-                ('\n[iter {}] ==>>{:s} [Epoch={:03d}/{:03d}] '
-                 '{:s} [learning_rate={:6.4f}]').format(t, time_string(), epoch, args.adv_epochs,
-                                                        need_time, current_learning_rate)
-                + ' [Best : Accuracy={:.2f}, Error={:.2f}]'.format(recorder.max_accuracy(False),
-                                                                   100 - recorder.max_accuracy(False)), log)
+        need_hour, need_mins, need_secs = convert_secs2time(epoch_time.avg * (args.adv_epochs - epoch))
+        need_time = '[Need: {:02d}:{:02d}:{:02d}]'.format(need_hour, need_mins, need_secs)
 
-            # train for one epoch
-            tr_acc, tr_acc5, tr_los = train(t, adv_loader, net, optimizer, epoch, args, log)
+        print_log(
+            ('\n ==>>{:s} [Epoch={:03d}/{:03d}] '
+             '{:s} [learning_rate={:6.4f}]').format(time_string(), epoch, args.adv_epochs,
+                                                    need_time, current_learning_rate)
+            + ' [Best : Accuracy={:.2f}, Error={:.2f}]'.format(recorder.max_accuracy(False),
+                                                               100 - recorder.max_accuracy(False)), log)
 
-            # evaluate on validation set
-            val_acc, val_los = validate(t, test_loader, net, "Test", log)
+        # train for one epoch
+        tr_acc, tr_acc5, tr_los = train(train_loader, net, optimizer, epoch, args, log)
 
-            train_loss.append(tr_los)
-            train_acc.append(tr_acc)
-            test_loss.append(val_los)
-            test_acc.append(val_acc)
+        # evaluate on validation set
+        val_acc, val_los = validate(epoch, test_loader, net, "Test", log)
 
-            recorder.update(epoch, tr_los, tr_acc, val_los, val_acc)
+        train_loss.append(tr_los)
+        train_acc.append(tr_acc)
+        test_loss.append(val_los)
+        test_acc.append(val_acc)
 
-            is_best = False
-            if val_acc > best_acc:
-                is_best = True
-                best_acc = val_acc
+        recorder.update(epoch, tr_los, tr_acc, val_los, val_acc)
 
-            if is_best:
-                save_checkpoint(net.state_dict(), iter_dir, "model_best.pth.tar")
+        is_best = False
+        if val_acc > best_acc:
+            is_best = True
+            best_acc = val_acc
 
-            # measure elapsed time
-            epoch_time.update(time.time() - start_time)
-            start_time = time.time()
-            result_png_path = os.path.join(iter_dir, 'results.png')
-            recorder.plot_curve(result_png_path)
+        if is_best:
+            save_checkpoint(net.state_dict(), iter_dir, "model_best.pth.tar")
 
-            train_log = OrderedDict()
-            train_log['train_loss'] = train_loss
-            train_log['train_acc'] = train_acc
-            train_log['test_loss'] = test_loss
-            train_log['test_acc'] = test_acc
+        # measure elapsed time
+        epoch_time.update(time.time() - start_time)
+        start_time = time.time()
+        result_png_path = os.path.join(iter_dir, 'results.png')
+        recorder.plot_curve(result_png_path)
 
-            pickle.dump(train_log, open(os.path.join(iter_dir, 'pickle_log.pkl'), 'wb'))
-            plotting(iter_dir)
+        train_log = OrderedDict()
+        train_log['train_loss'] = train_loss
+        train_log['train_acc'] = train_acc
+        train_log['test_loss'] = test_loss
+        train_log['test_acc'] = test_acc
 
-        validate(t, adv_loader, net, "Adversarial attack after training", log)
-
+        pickle.dump(train_log, open(os.path.join(iter_dir, 'pickle_log.pkl'), 'wb'))
+        plotting(iter_dir)
+        validate(epoch, adv_loader, net, "Adversarial attack after training", log)
     print_log("\nfinish", log)
     log.close()
 
