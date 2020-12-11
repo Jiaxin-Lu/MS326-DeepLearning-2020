@@ -95,7 +95,7 @@ class lenet5(nn.Module):
 
     def forward(self, x, target= None, mixup=False, mixup_hidden=False, mixup_alpha=None):
         if mixup_hidden:
-            layer_mix = random.randint(0,2)
+            layer_mix = random.randint(0, 4)
         elif mixup:
             layer_mix = 0
         else:
