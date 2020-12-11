@@ -72,6 +72,10 @@ parser.add_argument('--manualSeed', type=int, help='manual seed')
 parser.add_argument('--add_name', type=str, default='')
 parser.add_argument('--job_id', type=str, default='')
 
+parser.add_argument('--pgd_eps',type=float, default=8/255)
+parser.add_argument('--pgd_alpha',type=float,default=2/255)
+parser.add_argument('--pgd_step_size',type=int,default=7)
+
 args = parser.parse_args()
 
 out_str = str(args)
@@ -170,7 +174,7 @@ def train_with_attack(train_loader, model, optimizer, epoch, args, log):
         target = target.long()
         input, target = input.cuda(), target.cuda()
 
-        input = attack_single_batch_input(model, input, target)
+        input = attack_single_batch_input(model, input, target,args.pgd_step_size,args.pgd_eps,args.pgd_alpha)
 
         data_time.update(time.time() - end)
         if args.train == 'mixup':
@@ -321,7 +325,7 @@ def main():
         checkpoint = {"epoch", "arch", "state_dict", "recorder", "state_dict"}
         """
 
-        adv_test_dataset = attack_test_data(epoch, log, net, raw_test_data, 1024, num_iter=7)
+        adv_test_dataset = attack_test_data(epoch, log, net, raw_test_data, 1024, args.pgd_step_size, args.pgd_eps,args.pgd_alpha)
         adv_test_dataset.inputs = adv_test_dataset.inputs.cpu()
 
         train_loader, test_loader, adv_test_loader = load_dataset(epoch,

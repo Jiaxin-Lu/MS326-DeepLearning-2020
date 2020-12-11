@@ -157,7 +157,7 @@ def attack_single_batch_input(net, images, labels, num_iter=7, eps=8 / 255, alph
     return images
 
 
-def attack_test_data(t, log, net, raw_test_data, batch_size, num_iter=7):
+def attack_test_data(t, log, net, raw_test_data, batch_size, num_iter,eps,alpha):
     net.eval()
 
     print_log("[Epoch {}] Start generating adversarial data...".format(t), log)
@@ -179,7 +179,7 @@ def attack_test_data(t, log, net, raw_test_data, batch_size, num_iter=7):
         print(" " + str(i))
         images = raw_train_input[i:min(i + batch_size, len(raw_test_data))]
         labels = raw_train_label[i:min(i + batch_size, len(raw_test_data))]
-        adversarial_batch_input = attack_single_batch_input(net, images, labels, num_iter, eps=8 / 255)
+        adversarial_batch_input = attack_single_batch_input(net, images, labels, num_iter, eps,alpha)
         adversarial_train_input.append(adversarial_batch_input)
     adversarial_train_input = torch.cat(adversarial_train_input, dim=0)
 
