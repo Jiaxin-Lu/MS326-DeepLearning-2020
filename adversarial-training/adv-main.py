@@ -85,7 +85,7 @@ device = torch.device("cuda")
 
 
 def experiment_name(dataset, arch, epochs, dropout, batch_size, lr, momentum, decay, data_aug, train,
-                    mixup_alpha, job_id, add_name):
+                    mixup_alpha, job_id, add_name,eps,alpha,step_size):
     exp_name = dataset
     exp_name += '_arch_' + str(arch)
     exp_name += '_train_' + str(train)
@@ -104,7 +104,9 @@ def experiment_name(dataset, arch, epochs, dropout, batch_size, lr, momentum, de
         exp_name += '_job_id_' + str(job_id)
     if add_name != '':
         exp_name += '_add_name_' + str(add_name)
-
+    exp_name += '_eps_' + str(eps)
+    exp_name += '_alpha_' + str(alpha)
+    exp_name += '_step_size_' + str(step_size)
     return exp_name
 
 
@@ -271,7 +273,10 @@ def main():
                                train=args.train,
                                mixup_alpha=args.mixup_alpha,
                                job_id=args.job_id,
-                               add_name=args.add_name)
+                               add_name=args.add_name,
+                               eps=args.pgd_eps,
+                               alpha=args.pgd_alpha,
+                               step_size=args.pgd_step_size)
     exp_dir = args.root_dir + exp_name
 
     if not os.path.exists(exp_dir):
@@ -292,8 +297,11 @@ def main():
         net = models.__dict__[args.arch](num_classes, args.dropout, per_img_std, stride).cuda()
     else:
         net = models.lenet5(num_classes).cuda()
+    if args.dataset=="mnist":
+        backup_model_dir = "../mixup/" + args.root_dir + "backup_mnist_arch_lenet5_train_vanilla_m_alpha_0.0_do_False_eph_500_bs_100_lr_0.1_mom_0.9_decay_0.0001_data_aug_1_job_id_"
+    elif args.dataset=='cifar10':
+        backup_model_dir = "../mixup/" + args.root_dir + "backup_cifar10_arch_preactresnet18_train_vanilla_m_alpha_0.0_do_False_eph_2000_bs_100_lr_0.1_mom_0.9_decay_0.0001_data_aug_1_job_id_"
 
-    backup_model_dir = "../mixup/" + args.root_dir + "backup_" + exp_name
     print_log("backup_model_dir = {}".format(backup_model_dir), log)
     assert os.path.exists(backup_model_dir), "Experiment directory not found: " + backup_model_dir
 
