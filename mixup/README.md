@@ -74,19 +74,19 @@ python main.py --dataset cifar10 --data_dir data/cifar10/ --root_dir experiments
 
 #### No mixup LeNet5
 ```
-python main.py --dataset mnist --data_dir data/mnist/ --root_dir experiments/ --labels_per_class 5000 --arch lenet5 --learning_rate 0.1 --momentum 0.9 --decay 0.0001 --epochs 500 --schedule 500 1000 1500 --gammas 0.1 0.1 0.1 --train vanilla
+python main.py --dataset mnist --data_dir data/mnist/ --root_dir experiments/ --labels_per_class 5000 --arch lenet5 --learning_rate 0.1 --momentum 0.9 --decay 0.0001 --epochs 500 --schedule 300 400 --gammas 0.1 0.1 --train vanilla
 ```
 
 #### Mixup LeNet5
 
 ```
-python main.py --dataset mnist --data_dir data/mnist/ --root_dir experiments/ --labels_per_class 5000 --arch lenet5 --learning_rate 0.1 --momentum 0.9 --decay 0.0001 --epochs 500 --schedule 500 1000 1500 --gammas 0.1 0.1 0.1 --train mixup --mixup_alpha 1
+python main.py --dataset mnist --data_dir data/mnist/ --root_dir experiments/ --labels_per_class 5000 --arch lenet5 --learning_rate 0.1 --momentum 0.9 --decay 0.0001 --epochs 500 --schedule 300 400 --gammas 0.1 0.1 --train mixup --mixup_alpha 1
 ```
 
 #### Manifold mixup LeNet5
 
 ```
-python main.py --dataset mnist --data_dir data/mnist/ --root_dir experiments/ --labels_per_class 5000 --arch lenet5 --learning_rate 0.1 --momentum 0.9 --decay 0.0001 --epochs 500 --schedule 500 1000 1500 --gammas 0.1 0.1 0.1 --train mixup_hidden --mixup_alpha 2.0
+python main.py --dataset mnist --data_dir data/mnist/ --root_dir experiments/ --labels_per_class 5000 --arch lenet5 --learning_rate 0.1 --momentum 0.9 --decay 0.0001 --epochs 500 --schedule 300 400 --gammas 0.1 0.1 --train mixup_hidden --mixup_alpha 2.0
 ```
 
 
