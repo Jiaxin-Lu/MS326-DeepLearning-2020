@@ -162,7 +162,7 @@ def load_data_subset(data_aug, batch_size, workers, dataset, data_target_dir, la
     elif dataset == 'tiny-imagenet-200':
         pass
     else:
-        train_sampler, valid_sampler, unlabelled_sampler = get_sampler(train_data.targets, labels_per_class,
+        train_sampler, valid_sampler, unlabelled_sampler = get_sampler(train_data.train_labels, labels_per_class,
                                                                        valid_labels_per_class)
 
     if dataset == 'tiny-imagenet-200':
