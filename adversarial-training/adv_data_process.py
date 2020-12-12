@@ -140,7 +140,7 @@ def attack_single_batch_input(net, images, labels, num_iter=7, eps=8 / 255, alph
 
     if random_start:
         ori_images = ori_images + torch.Tensor(np.random.uniform(-eps, eps, ori_images.shape)).cuda()
-        ori_images = torch.clip(ori_images, 0, 255)
+        ori_images = torch.clip(ori_images, 0, 1)
 
     for i in range(num_iter):
         images.requires_grad = True
