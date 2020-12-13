@@ -41,7 +41,6 @@ parser.add_argument('--arch', metavar='ARCH', default='resnext29_8_64', choices=
 parser.add_argument('--initial_channels', type=int, default=64, choices=(16, 64))
 # Optimization options
 parser.add_argument('--epochs', type=int, default=300, help='Number of epochs to train.')
-parser.add_argument('--adv_epochs', type=int, default=500, help='Number of epochs to train in adversarial training.')
 parser.add_argument('--train', type=str, default='vanilla', choices=['vanilla', 'mixup', 'mixup_hidden', 'cutout'])
 parser.add_argument('--mixup_alpha', type=float, default=0.0, help='alpha parameter for mixup')
 
@@ -71,6 +70,8 @@ parser.add_argument('--workers', type=int, default=2, help='number of data loadi
 parser.add_argument('--manualSeed', type=int, help='manual seed')
 parser.add_argument('--add_name', type=str, default='')
 parser.add_argument('--job_id', type=str, default='')
+parser.add_argument('--train_from_empty',action='store_true', dest='train_from_empty',default=False)
+
 
 parser.add_argument('--pgd_eps',type=float, default=8/255)
 parser.add_argument('--pgd_alpha',type=float,default=2/255)
@@ -85,7 +86,7 @@ device = torch.device("cuda")
 
 
 def experiment_name(dataset, arch, epochs, dropout, batch_size, lr, momentum, decay, data_aug, train,
-                    mixup_alpha, job_id, add_name,eps,alpha,step_size):
+                    mixup_alpha, job_id, add_name,eps,alpha,step_size,from_empty):
     exp_name = dataset
     exp_name += '_arch_' + str(arch)
     exp_name += '_train_' + str(train)
@@ -107,6 +108,10 @@ def experiment_name(dataset, arch, epochs, dropout, batch_size, lr, momentum, de
     exp_name += '_eps_' + str(eps)
     exp_name += '_alpha_' + str(alpha)
     exp_name += '_step_size_' + str(step_size)
+    if from_empty:
+        exp_name += '_from_empty'
+    else:
+        exp_name += '_from_model'
     return exp_name
 
 
@@ -276,7 +281,8 @@ def main():
                                add_name=args.add_name,
                                eps=args.pgd_eps,
                                alpha=args.pgd_alpha,
-                               step_size=args.pgd_step_size)
+                               step_size=args.pgd_step_size,
+                               from_empty=args.train_from_empty)
     exp_dir = args.root_dir + exp_name
 
     if not os.path.exists(exp_dir):
@@ -305,14 +311,15 @@ def main():
     print_log("backup_model_dir = {}".format(backup_model_dir), log)
     assert os.path.exists(backup_model_dir), "Experiment directory not found: " + backup_model_dir
 
-    print_log("\nStart loading model-best checkpoint...", log)
-    checkpoint = torch.load(backup_model_dir + "/model_best.pth.tar")
-    net.load_state_dict(checkpoint["state_dict"])
-    print_log("Load model-best checkpoint successfully!", log)
+    if not args.train_from_empty:
+        print_log("\nStart loading model-best checkpoint...", log)
+        checkpoint = torch.load(backup_model_dir + "/model_best.pth.tar")
+        net.load_state_dict(checkpoint["state_dict"])
+        print_log("Load model-best checkpoint successfully!", log)
     optimizer=torch.optim.Adam(net.parameters(),args.learning_rate,weight_decay=args.decay)
     # optimizer = torch.optim.SGD(net.parameters(), args.learning_rate, momentum=args.momentum,
     #                             weight_decay=args.decay, nesterov=True)
-    recorder = RecorderMeter(args.adv_epochs)
+    recorder = RecorderMeter(args.epochs)
 
     start_time = time.time()
     epoch_time = AverageMeter()
@@ -325,7 +332,7 @@ def main():
     attack_aft_acc = []
     attack_aft_loss = []
 
-    for epoch in range(1, args.adv_epochs + 1):
+    for epoch in range(1, args.epochs + 1):
         print_log("\n======== EPOCH {} ========".format(epoch), log)
 
         """
@@ -346,12 +353,12 @@ def main():
         # Train!
         current_learning_rate = adjust_learning_rate(optimizer, epoch, args.gammas, args.schedule)
 
-        need_hour, need_mins, need_secs = convert_secs2time(epoch_time.avg * (args.adv_epochs - epoch))
+        need_hour, need_mins, need_secs = convert_secs2time(epoch_time.avg * (args.epochs - epoch))
         need_time = '[Need: {:02d}:{:02d}:{:02d}]'.format(need_hour, need_mins, need_secs)
 
         print_log(
             ('\n ==>>{:s} [Epoch={:03d}/{:03d}] '
-             '{:s} [learning_rate={:6.4f}]').format(time_string(), epoch, args.adv_epochs,
+             '{:s} [learning_rate={:6.4f}]').format(time_string(), epoch, args.epochs,
                                                     need_time, current_learning_rate)
             + ' [Best : Accuracy={:.2f}, Error={:.2f}]'.format(recorder.max_accuracy(False),
                                                                100 - recorder.max_accuracy(False)), log)
