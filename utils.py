@@ -47,16 +47,16 @@ class RecorderMeter(object):
         assert total_epoch > 0
         self.total_epoch = total_epoch
         self.current_epoch = 0
-        self.epoch_losses = np.zeros((self.total_epoch + 1, 2), dtype=np.float32)  # [epoch, train/val]
+        self.epoch_losses = np.zeros((self.total_epoch, 2), dtype=np.float32)  # [epoch, train/val]
         self.epoch_losses = self.epoch_losses - 1
 
-        self.epoch_accuracy = np.zeros((self.total_epoch + 1, 2), dtype=np.float32)  # [epoch, train/val]
+        self.epoch_accuracy = np.zeros((self.total_epoch, 2), dtype=np.float32)  # [epoch, train/val]
         self.epoch_accuracy = self.epoch_accuracy
 
-        self.at_bef_losses = np.zeros(self.total_epoch + 1, dtype=np.float32)
+        self.at_bef_losses = np.zeros(self.total_epoch, dtype=np.float32)
         self.at_bef_losses = self.at_bef_losses - 1
 
-        self.at_bef_accuracy = np.zeros(self.total_epoch + 1, dtype=np.float32)
+        self.at_bef_accuracy = np.zeros(self.total_epoch, dtype=np.float32)
 
 
     def update(self, idx, train_loss, train_acc, val_loss, val_acc, at_bef_loss, at_bef_acc):
