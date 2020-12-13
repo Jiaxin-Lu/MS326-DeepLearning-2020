@@ -47,19 +47,27 @@ class RecorderMeter(object):
         assert total_epoch > 0
         self.total_epoch = total_epoch
         self.current_epoch = 0
-        self.epoch_losses = np.zeros((self.total_epoch, 2), dtype=np.float32)  # [epoch, train/val]
+        self.epoch_losses = np.zeros((self.total_epoch + 1, 2), dtype=np.float32)  # [epoch, train/val]
         self.epoch_losses = self.epoch_losses - 1
 
-        self.epoch_accuracy = np.zeros((self.total_epoch, 2), dtype=np.float32)  # [epoch, train/val]
+        self.epoch_accuracy = np.zeros((self.total_epoch + 1, 2), dtype=np.float32)  # [epoch, train/val]
         self.epoch_accuracy = self.epoch_accuracy
 
-    def update(self, idx, train_loss, train_acc, val_loss, val_acc):
+        self.at_bef_losses = np.zeros(self.total_epoch + 1, dtype=np.float32)
+        self.at_bef_losses = self.at_bef_losses - 1
+
+        self.at_bef_accuracy = np.zeros(self.total_epoch + 1, dtype=np.float32)
+
+
+    def update(self, idx, train_loss, train_acc, val_loss, val_acc, at_bef_loss, at_bef_acc):
         assert idx >= 0 and idx < self.total_epoch, 'total_epoch : {} , but update with the {} index'.format(
             self.total_epoch, idx)
         self.epoch_losses[idx, 0] = train_loss
         self.epoch_losses[idx, 1] = val_loss
         self.epoch_accuracy[idx, 0] = train_acc
         self.epoch_accuracy[idx, 1] = val_acc
+        self.at_bef_losses[idx] = at_bef_loss
+        self.at_bef_accuracy[idx] = at_bef_acc
         self.current_epoch = idx + 1
         return self.max_accuracy(False) == val_acc
 
@@ -69,6 +77,9 @@ class RecorderMeter(object):
             return self.epoch_accuracy[:self.current_epoch, 0].max()
         else:
             return self.epoch_accuracy[:self.current_epoch, 1].max()
+
+    def max_at_bef_acc(self):
+        return self.at_bef_accuracy[:self.current_epoch].max()
 
     def plot_curve(self, save_path):
         title = 'the accuracy/loss curve of train/val'

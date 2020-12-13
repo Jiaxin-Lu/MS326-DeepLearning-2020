@@ -360,8 +360,9 @@ def main():
             ('\n ==>>{:s} [Epoch={:03d}/{:03d}] '
              '{:s} [learning_rate={:6.4f}]').format(time_string(), epoch, args.epochs,
                                                     need_time, current_learning_rate)
-            + ' [Best : Accuracy={:.2f}, Error={:.2f}]'.format(recorder.max_accuracy(False),
-                                                               100 - recorder.max_accuracy(False)), log)
+            + (' [Best : Test Accuracy={:.2f}, '
+               'Attack before Training Accuracy={:.2f}]'.format(recorder.max_accuracy(False),
+                                                                recorder.max_at_bef_acc())), log)
 
         # train for one epoch
         tr_acc, tr_acc5, tr_los = train_with_attack(train_loader, net, optimizer, epoch, args, log)
@@ -376,10 +377,10 @@ def main():
         test_acc.append(val_acc)
         attack_bef_loss.append(at_bef_loss)
         attack_bef_acc.append(at_bef_acc)
-        attack_aft_loss.append(at_aft_loss)
-        attack_aft_acc.append(at_aft_acc)
+        # attack_aft_loss.append(at_aft_loss)
+        # attack_aft_acc.append(at_aft_acc)
 
-        recorder.update(epoch, tr_los, tr_acc, val_los, val_acc)
+        recorder.update(epoch, tr_los, tr_acc, val_los, val_acc, at_bef_loss, at_bef_acc)
 
         # measure elapsed time
         epoch_time.update(time.time() - start_time)
@@ -394,8 +395,8 @@ def main():
         train_log['test_acc'] = test_acc
         train_log['attack_before_training_loss'] = attack_bef_loss
         train_log['attack_before_training_acc'] = attack_bef_acc
-        train_log['attack_after_training_loss'] = attack_aft_loss
-        train_log['attack_after_training_acc'] = attack_aft_acc
+        # train_log['attack_after_training_loss'] = attack_aft_loss
+        # train_log['attack_after_training_acc'] = attack_aft_acc
 
         pickle.dump(train_log, open(os.path.join(exp_dir, 'pickle_log.pkl'), 'wb'))
         plotting(exp_dir)
