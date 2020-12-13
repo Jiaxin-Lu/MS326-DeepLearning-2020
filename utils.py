@@ -79,6 +79,8 @@ class RecorderMeter(object):
             return self.epoch_accuracy[:self.current_epoch, 1].max()
 
     def max_at_bef_acc(self):
+        if self.current_epoch <= 0:
+            return 0
         return self.at_bef_accuracy[:self.current_epoch].max()
 
     def plot_curve(self, save_path):
