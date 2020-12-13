@@ -267,7 +267,7 @@ def plotting(exp_dir):
     plt.xlabel('evaluation step')
     plt.ylabel('metrics')
     plt.tight_layout()
-    plt.legend(loc='lower right')
+    plt.legend()
     plt.savefig(os.path.join(exp_dir, 'loss.png'))
     plt.clf()
 
@@ -281,7 +281,7 @@ def plotting(exp_dir):
     plt.xlabel('evaluation step')
     plt.ylabel('metrics')
     plt.tight_layout()
-    plt.legend(loc='upper right')
+    plt.legend()
     plt.savefig(os.path.join(exp_dir, 'acc.png'))
     plt.clf()
     return
