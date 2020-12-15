@@ -380,14 +380,6 @@ def main():
         # attack_aft_loss.append(at_aft_loss)
         # attack_aft_acc.append(at_aft_acc)
 
-        recorder.update(epoch, tr_los, tr_acc, val_los, val_acc, at_bef_loss, at_bef_acc)
-
-        # measure elapsed time
-        epoch_time.update(time.time() - start_time)
-        start_time = time.time()
-        result_png_path = os.path.join(exp_dir, 'results.png')
-        recorder.plot_curve(result_png_path)
-
         train_log = OrderedDict()
         train_log['train_loss'] = train_loss
         train_log['train_acc'] = train_acc
@@ -400,6 +392,21 @@ def main():
 
         pickle.dump(train_log, open(os.path.join(exp_dir, 'pickle_log.pkl'), 'wb'))
         plotting(exp_dir)
+
+        if epoch == args.epochs:
+            break
+
+
+        recorder.update(epoch, tr_los, tr_acc, val_los, val_acc, at_bef_loss, at_bef_acc)
+
+        # measure elapsed time
+        epoch_time.update(time.time() - start_time)
+        start_time = time.time()
+        result_png_path = os.path.join(exp_dir, 'results.png')
+        recorder.plot_curve(result_png_path)
+
+    print_log("Saving final model...", log)
+    torch.save(net.state_dict(), exp_dir + '/final_model.pth')
     print_log("\nfinish", log)
     log.close()
 
