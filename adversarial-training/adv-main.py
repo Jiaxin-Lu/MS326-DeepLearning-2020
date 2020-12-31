@@ -77,6 +77,8 @@ parser.add_argument('--pgd_eps',type=float, default=8/255)
 parser.add_argument('--pgd_alpha',type=float,default=2/255)
 parser.add_argument('--pgd_step_size',type=int,default=7)
 
+parser.add_argument('--noise', type=float, default=0.0)
+
 args = parser.parse_args()
 
 out_str = str(args)
@@ -91,23 +93,14 @@ def experiment_name(dataset, arch, epochs, dropout, batch_size, lr, momentum, de
     exp_name += '_arch_' + str(arch)
     exp_name += '_train_' + str(train)
     exp_name += '_m_alpha_' + str(mixup_alpha)
-    if dropout:
-        exp_name += '_do_' + 'true'
-    else:
-        exp_name += '_do_' + 'False'
     exp_name += '_eph_' + str(epochs)
     exp_name += '_bs_' + str(batch_size)
     exp_name += '_lr_' + str(lr)
-    exp_name += '_mom_' + str(momentum)
     exp_name += '_decay_' + str(decay)
-    exp_name += '_data_aug_' + str(data_aug)
-    if job_id is not None:
-        exp_name += '_job_id_' + str(job_id)
-    if add_name != '':
-        exp_name += '_add_name_' + str(add_name)
-    exp_name += '_eps_' + str(eps)
-    exp_name += '_alpha_' + str(alpha)
+    exp_name += '_eps_' + str(eps)[:min(5, len(str(eps)))]
+    exp_name += '_alpha_' + str(alpha)[:min(5, len(str(alpha)))]
     exp_name += '_step_size_' + str(step_size)
+    exp_name += '_noise_' + str(args.noise)
     if from_empty:
         exp_name += '_from_empty'
     else:
@@ -186,15 +179,15 @@ def train_with_attack(train_loader, model, optimizer, epoch, args, log):
         data_time.update(time.time() - end)
         if args.train == 'mixup':
             input_var, target_var = Variable(input), Variable(target)
-            output, reweighted_target = model(input_var, target_var, mixup=True, mixup_alpha=args.mixup_alpha)
+            output, reweighted_target = model(input_var, target_var, mixup=True, mixup_alpha=args.mixup_alpha, noise=args.noise)
             loss = bce_loss(softmax(output), reweighted_target)
         elif args.train == 'mixup_hidden':
             input_var, target_var = Variable(input), Variable(target)
-            output, reweighted_target = model(input_var, target_var, mixup_hidden=True, mixup_alpha=args.mixup_alpha)
+            output, reweighted_target = model(input_var, target_var, mixup_hidden=True, mixup_alpha=args.mixup_alpha, noise=args.noise)
             loss = bce_loss(softmax(output), reweighted_target)
         elif args.train == 'vanilla':
             input_var, target_var = Variable(input), Variable(target)
-            output, reweighted_target = model(input_var, target_var)
+            output, reweighted_target = model(input_var, target_var, noise=args.noise)
             loss = bce_loss(softmax(output), reweighted_target)
         else:
             assert False

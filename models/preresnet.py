@@ -98,7 +98,7 @@ class PreActResNet(nn.Module):
         out = self.layer2(out)
         return out
 
-    def forward(self, x, target= None, mixup=False, mixup_hidden=False, mixup_alpha=None):
+    def forward(self, x, target= None, mixup=False, mixup_hidden=False, mixup_alpha=None, noise=0.0):
         #import pdb; pdb.set_trace()
         if self.per_img_std:
             x = per_image_standardization(x)
@@ -118,7 +118,7 @@ class PreActResNet(nn.Module):
             lam = Variable(lam)
         
         if target is not None :
-            target_reweighted = to_one_hot(target, self.num_classes)
+            target_reweighted = to_one_hot(target, self.num_classes, noise=noise)
         
         if layer_mix == 0:
                 out, target_reweighted = mixup_process(out, target_reweighted, lam=lam)

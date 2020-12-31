@@ -179,11 +179,12 @@ class Cutout(object):
 
 
 
-def to_one_hot(inp,num_classes):
+def to_one_hot(inp, num_classes, noise=0.0):
     y_onehot = torch.FloatTensor(inp.size(0), num_classes)
     y_onehot.zero_()
+    y_onehot = y_onehot + noise
 
-    y_onehot.scatter_(1, inp.unsqueeze(1).data.cpu(), 1)
+    y_onehot.scatter_(1, inp.unsqueeze(1).data.cpu(), 1 - (num_classes - 1) * noise)
     
     #return Variable(y_onehot.cuda(),requires_grad=False)
     return y_onehot

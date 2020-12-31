@@ -93,7 +93,7 @@ class lenet5(nn.Module):
         self.f4 = F4()
         self.f5 = F5(num_classes)
 
-    def forward(self, x, target= None, mixup=False, mixup_hidden=False, mixup_alpha=None):
+    def forward(self, x, target= None, mixup=False, mixup_hidden=False, mixup_alpha=None, noise=0.0):
         if mixup_hidden:
             layer_mix = random.randint(0, 4)
         elif mixup:
@@ -109,7 +109,7 @@ class lenet5(nn.Module):
             lam = Variable(lam)
 
         if target is not None:
-            target_reweighted = to_one_hot(target, self.num_classes)
+            target_reweighted = to_one_hot(target, self.num_classes, noise=noise)
 
         if layer_mix == 0:
             out, target_reweighted = mixup_process(out, target_reweighted, lam=lam)
