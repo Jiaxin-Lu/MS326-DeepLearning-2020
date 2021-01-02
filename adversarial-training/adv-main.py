@@ -309,9 +309,15 @@ def main():
         checkpoint = torch.load(backup_model_dir + "/model_best.pth.tar")
         net.load_state_dict(checkpoint["state_dict"])
         print_log("Load model-best checkpoint successfully!", log)
-    optimizer=torch.optim.Adam(net.parameters(),args.learning_rate,weight_decay=args.decay)
-    # optimizer = torch.optim.SGD(net.parameters(), args.learning_rate, momentum=args.momentum,
-    #                             weight_decay=args.decay, nesterov=True)
+
+    if args.dataset == 'mnist':
+        optimizer = torch.optim.Adam(net.parameters(), args.learning_rate, weight_decay=args.decay)
+    elif args.dataset == 'cifar10':
+        optimizer = torch.optim.SGD(net.parameters(), args.learning_rate, momentum=args.momentum,
+                                    weight_decay=args.decay, nesterov=True)
+    else:
+        assert False
+
     recorder = RecorderMeter(args.epochs)
 
     start_time = time.time()
