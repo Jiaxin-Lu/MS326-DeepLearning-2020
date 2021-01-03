@@ -135,24 +135,24 @@ class Wide_ResNet(nn.Module):
             target_reweighted = to_one_hot(target,self.num_classes)
             
         if layer_mix == 0:
-                out, target_reweighted = mixup_process(out, target_reweighted, lam=lam)
+                out, target_reweighted = mixup_process(out, out, target_reweighted, lam=lam)
 
         out = self.conv1(out)
         out = self.layer1(out)
         
         
         if layer_mix == 1:
-            out, target_reweighted = mixup_process(out, target_reweighted, lam=lam)
+            out, target_reweighted = mixup_process(out, out, target_reweighted, lam=lam)
 
         out = self.layer2(out)
 
         if layer_mix == 2:
-            out, target_reweighted = mixup_process(out, target_reweighted, lam=lam)
+            out, target_reweighted = mixup_process(out, out, target_reweighted, lam=lam)
 
         
         out = self.layer3(out)
         if  layer_mix == 3:
-            out, target_reweighted = mixup_process(out, target_reweighted, lam=lam)
+            out, target_reweighted = mixup_process(out, out, target_reweighted, lam=lam)
 
         out = act(self.bn1(out))
         out = F.avg_pool2d(out, 8)

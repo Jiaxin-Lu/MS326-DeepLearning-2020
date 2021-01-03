@@ -129,23 +129,23 @@ class CifarResNeXt(nn.Module):
             target_reweighted = to_one_hot(target,self.num_classes)
         
         if layer_mix == 0:
-                out, target_reweighted = mixup_process(out, target_reweighted, lam=lam)
+                out, target_reweighted = mixup_process(out, out, target_reweighted, lam=lam)
 
         out = self.conv_1_3x3(out)
         out = F.relu(self.bn_1(out), inplace=True)
         out = self.stage_1(out)
 
         if layer_mix == 1:
-            out, target_reweighted = mixup_process(out, target_reweighted, lam=lam)
+            out, target_reweighted = mixup_process(out, out, target_reweighted, lam=lam)
 
         out = self.stage_2(out)
 
         if layer_mix == 2:
-            out, target_reweighted = mixup_process(out, target_reweighted, lam=lam)
+            out, target_reweighted = mixup_process(out, out, target_reweighted, lam=lam)
 
         out = self.stage_3(out)
         if  layer_mix == 3:
-            out, target_reweighted = mixup_process(out, target_reweighted, lam=lam)
+            out, target_reweighted = mixup_process(out, out, target_reweighted, lam=lam)
         
         out = self.avgpool(out)
         out = out.view(out.size(0), -1)

@@ -112,38 +112,38 @@ class PreActResNet(nn.Module):
             out = x
             
             if layer_mix == 0:
-                out, y_a, y_b, lam = mixup_data(out, target, mixup_alpha)
+                out, y_a, y_b, lam = mixup_data(out, out, target, mixup_alpha)
             
             out = self.conv1(x)
             
             out = self.layer1(out)
     
             if layer_mix == 1:
-                out, y_a, y_b, lam = mixup_data(out, target, mixup_alpha)
+                out, y_a, y_b, lam = mixup_data(out, out, target, mixup_alpha)
             
             out = self.layer2(out)
     
             if layer_mix == 2:
-                out, y_a, y_b, lam = mixup_data(out, target, mixup_alpha)
+                out, y_a, y_b, lam = mixup_data(out, out, target, mixup_alpha)
            
             out = self.layer3(out)
             
             if layer_mix == 3:
-                out, y_a, y_b, lam = mixup_data(out, target, mixup_alpha)
+                out, y_a, y_b, lam = mixup_data(out, out, target, mixup_alpha)
             
             
             
             out = self.layer4(out)
             
             if layer_mix == 4:
-                out, y_a, y_b, lam = mixup_data(out, target, mixup_alpha)
+                out, y_a, y_b, lam = mixup_data(out, out, target, mixup_alpha)
             
             
             out = F.avg_pool2d(out, 4)
             out = out.view(out.size(0), -1)
             out = self.linear(out)            
             #if layer_mix == 4:
-            #    out, y_a, y_b, lam = mixup_data(out, target, mixup_alpha)
+            #    out, y_a, y_b, lam = mixup_data(out, out, target, mixup_alpha)
 
             lam = torch.tensor(lam).cuda()
             lam = lam.repeat(y_a.size())

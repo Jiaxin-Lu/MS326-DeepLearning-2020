@@ -41,7 +41,7 @@ parser.add_argument('--arch', metavar='ARCH', default='resnext29_8_64', choices=
 parser.add_argument('--initial_channels', type=int, default=64, choices=(16, 64))
 # Optimization options
 parser.add_argument('--epochs', type=int, default=300, help='Number of epochs to train.')
-parser.add_argument('--train', type=str, default='vanilla', choices=['vanilla', 'mixup', 'mixup_hidden', 'cutout'])
+parser.add_argument('--train', type=str, default='vanilla', choices=['vanilla', 'mixup', 'mixup_hidden', 'cutout', 'partial_pgd'])
 parser.add_argument('--mixup_alpha', type=float, default=0.0, help='alpha parameter for mixup')
 
 parser.add_argument('--dropout', action='store_true', default=False,
@@ -174,20 +174,25 @@ def train_with_attack(train_loader, model, optimizer, epoch, args, log):
         target = target.long()
         input, target = input.cuda(), target.cuda()
 
+        input_ori = input
         input = attack_single_batch_input(model, input, target,args.pgd_step_size,args.pgd_eps,args.pgd_alpha)
 
         data_time.update(time.time() - end)
         if args.train == 'mixup':
             input_var, target_var = Variable(input), Variable(target)
-            output, reweighted_target = model(input_var, target_var, mixup=True, mixup_alpha=args.mixup_alpha, noise=args.noise)
+            output, reweighted_target = model(input_var, target=target_var, mixup=True, mixup_alpha=args.mixup_alpha, noise=args.noise)
             loss = bce_loss(softmax(output), reweighted_target)
         elif args.train == 'mixup_hidden':
             input_var, target_var = Variable(input), Variable(target)
-            output, reweighted_target = model(input_var, target_var, mixup_hidden=True, mixup_alpha=args.mixup_alpha, noise=args.noise)
+            output, reweighted_target = model(input_var, target=target_var, mixup_hidden=True, mixup_alpha=args.mixup_alpha, noise=args.noise)
             loss = bce_loss(softmax(output), reweighted_target)
         elif args.train == 'vanilla':
             input_var, target_var = Variable(input), Variable(target)
-            output, reweighted_target = model(input_var, target_var, noise=args.noise)
+            output, reweighted_target = model(input_var, target=target_var, noise=args.noise)
+            loss = bce_loss(softmax(output), reweighted_target)
+        elif args.train == 'partial_pgd':
+            input_var, input_ori_var, target_var = Variable(input), Variable(input_ori), Variable(target)
+            output, reweighted_target = model(input_var, xb=input_ori_var, target=target_var, mixup=True, mixup_alpha=args.mixup_alpha, noise=args.noise)
             loss = bce_loss(softmax(output), reweighted_target)
         else:
             assert False

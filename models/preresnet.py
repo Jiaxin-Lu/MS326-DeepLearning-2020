@@ -98,7 +98,7 @@ class PreActResNet(nn.Module):
         out = self.layer2(out)
         return out
 
-    def forward(self, x, target= None, mixup=False, mixup_hidden=False, mixup_alpha=None, noise=0.0):
+    def forward(self, x, xb=None, target= None, mixup=False, mixup_hidden=False, mixup_alpha=None, noise=0.0):
         #import pdb; pdb.set_trace()
         if self.per_img_std:
             x = per_image_standardization(x)
@@ -119,25 +119,28 @@ class PreActResNet(nn.Module):
         
         if target is not None :
             target_reweighted = to_one_hot(target, self.num_classes, noise=noise)
+
+        if xb is None:
+            xb = x
         
         if layer_mix == 0:
-                out, target_reweighted = mixup_process(out, target_reweighted, lam=lam)
+                out, target_reweighted = mixup_process(out, xb, target_reweighted, lam=lam)
 
         out = self.conv1(out)
         out = self.layer1(out)
 
         if layer_mix == 1:
-            out, target_reweighted = mixup_process(out, target_reweighted, lam=lam)
+            out, target_reweighted = mixup_process(out, out, target_reweighted, lam=lam)
 
         out = self.layer2(out)
 
         if layer_mix == 2:
-            out, target_reweighted = mixup_process(out, target_reweighted, lam=lam)
+            out, target_reweighted = mixup_process(out, out, target_reweighted, lam=lam)
 
         
         out = self.layer3(out)
         if  layer_mix == 3:
-            out, target_reweighted = mixup_process(out, target_reweighted, lam=lam)
+            out, target_reweighted = mixup_process(out, out, target_reweighted, lam=lam)
 
         out = self.layer4(out)
         out = F.avg_pool2d(out, 4)

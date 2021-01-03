@@ -163,9 +163,10 @@ def to_one_hot(inp, num_classes, noise=0.0):
     return Variable(y_onehot.cuda(), requires_grad=False)
 
 
-def mixup_process(out, target_reweighted, lam):
-    indices = np.random.permutation(out.size(0))
-    out = out * lam + out[indices] * (1 - lam)
+def mixup_process(xa, xb, target_reweighted, lam):
+    assert xa.size() == xb.size()
+    indices = np.random.permutation(xa.size(0))
+    out = xa * lam + xb[indices] * (1 - lam)
     target_shuffled_onehot = target_reweighted[indices]
     target_reweighted = target_reweighted * lam + target_shuffled_onehot * (1 - lam)
 
@@ -175,15 +176,16 @@ def mixup_process(out, target_reweighted, lam):
     return out, target_reweighted
 
 
-def mixup_data(x, y, alpha):
+def mixup_data(xa, xb, y, alpha):
     '''Compute the mixup data. Return mixed inputs, pairs of targets, and lambda'''
+    assert xa.size() == xb.size()
     if alpha > 0.:
         lam = np.random.beta(alpha, alpha)
     else:
         lam = 1.
-    batch_size = x.size()[0]
+    batch_size = xa.size()[0]
     index = torch.randperm(batch_size).cuda()
-    mixed_x = lam * x + (1 - lam) * x[index, :]
+    mixed_x = lam * xa + (1 - lam) * xb[index, :]
     y_a, y_b = y, y[index]
     return mixed_x, y_a, y_b, lam
 
