@@ -103,7 +103,7 @@ class ResNet(nn.Module):
             
             if layer_mix == 0:
                 #out = lam * out + (1 - lam) * out[index,:]
-                out, y_a, y_b, lam = mixup_data(out, target, mixup_alpha)
+                out, y_a, y_b, lam = mixup_data(out, out, target, mixup_alpha)
             #print (out)       
             
             out = F.relu(self.bn1(self.conv1(x)))
@@ -112,7 +112,7 @@ class ResNet(nn.Module):
     
             if layer_mix == 1:
                 #out = lam * out + (1 - lam) * out[index,:]
-                out, y_a, y_b, lam = mixup_data(out, target, mixup_alpha)
+                out, y_a, y_b, lam = mixup_data(out, out, target, mixup_alpha)
             
             #print (out)
 
@@ -120,21 +120,21 @@ class ResNet(nn.Module):
     
             if layer_mix == 2:
                 #out = lam * out + (1 - lam) * out[index,:]
-                out, y_a, y_b, lam = mixup_data(out, target, mixup_alpha)
+                out, y_a, y_b, lam = mixup_data(out, out, target, mixup_alpha)
            #print (out)
 
             out = self.layer3(out)
             
             if layer_mix == 3:
                 #out = lam * out + (1 - lam) * out[index,:]
-                out, y_a, y_b, lam = mixup_data(out, target, mixup_alpha)
+                out, y_a, y_b, lam = mixup_data(out, out, target, mixup_alpha)
             #print (out)
 
             out = self.layer4(out)
             
             if layer_mix == 4:
                 #out = lam * out + (1 - lam) * out[index,:]
-                out, y_a, y_b, lam = mixup_data(out, target, mixup_alpha)
+                out, y_a, y_b, lam = mixup_data(out, out, target, mixup_alpha)
 
             #print (out)
             out = F.avg_pool2d(out, 4)
@@ -143,7 +143,7 @@ class ResNet(nn.Module):
             
             if layer_mix == 5:
                 #out = lam * out + (1 - lam) * out[index,:]
-                out, y_a, y_b, lam = mixup_data(out, target, mixup_alpha)
+                out, y_a, y_b, lam = mixup_data(out, out, target, mixup_alpha)
             
             lam = torch.tensor(lam).cuda()
             lam = lam.repeat(y_a.size())
