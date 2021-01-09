@@ -291,10 +291,7 @@ def main():
     print_log("exp_dir = {}".format(exp_dir), log)
 
     per_img_std = False
-    if args.dataset == 'tiny-imagenet-200':
-        stride = 2
-    else:
-        stride = 1
+    stride = 1
 
     raw_train_data, raw_test_data, num_classes = load_raw_dataset(args.data_aug, args.dataset, args.data_dir)
     if args.arch != "lenet5":

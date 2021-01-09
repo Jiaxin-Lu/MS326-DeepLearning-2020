@@ -73,6 +73,13 @@ parser.add_argument('--workers', type=int, default=2, help='number of data loadi
 parser.add_argument('--manualSeed', type=int, help='manual seed')
 parser.add_argument('--add_name', type=str, default='')
 parser.add_argument('--job_id', type=str, default='')
+parser.add_argument('--train_from_empty',action='store_true', dest='train_from_empty',default=False)
+
+parser.add_argument('--pgd_eps',type=float, default=8/255)
+parser.add_argument('--pgd_alpha',type=float,default=2/255)
+parser.add_argument('--pgd_step_size',type=int,default=7)
+
+parser.add_argument('--noise', type=float, default=0.0)
 
 args = parser.parse_args()
 args.use_cuda = args.ngpu > 0 and torch.cuda.is_available()
@@ -158,10 +165,6 @@ def accuracy(output, target, topk=(1,)):
     return res
 
 
-def mixup_criterion(y_a, y_b, lam):
-    return lambda criterion, pred: lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
-
-
 bce_loss = nn.BCELoss().cuda()
 softmax = nn.Softmax(dim=1).cuda()
 criterion = nn.CrossEntropyLoss().cuda()
@@ -185,15 +188,15 @@ def train(train_loader, model, optimizer, epoch, args, log):
         data_time.update(time.time() - end)
         if args.train == 'mixup':
             input_var, target_var = Variable(input), Variable(target)
-            output, reweighted_target = model(input_var, target_var, mixup=True, mixup_alpha=args.mixup_alpha)
+            output, reweighted_target = model(input_var, target=target_var, mixup=True, mixup_alpha=args.mixup_alpha, noise=args.noise)
             loss = bce_loss(softmax(output), reweighted_target)
         elif args.train == 'mixup_hidden':
             input_var, target_var = Variable(input), Variable(target)
-            output, reweighted_target = model(input_var, target_var, mixup_hidden=True, mixup_alpha=args.mixup_alpha)
+            output, reweighted_target = model(input_var, target=target_var, mixup_hidden=True, mixup_alpha=args.mixup_alpha, noise=args.noise)
             loss = bce_loss(softmax(output), reweighted_target)
         elif args.train == 'vanilla':
             input_var, target_var = Variable(input), Variable(target)
-            output, reweighted_target = model(input_var, target_var)
+            output, reweighted_target = model(input_var, target=target_var, noise=args.noise)
             loss = bce_loss(softmax(output), reweighted_target)
 
         # measure accuracy and record loss
@@ -300,24 +303,13 @@ def main():
     print_log("torch  version : {}".format(torch.__version__), log)
     print_log("cudnn  version : {}".format(torch.backends.cudnn.version()), log)
 
-    if args.adv_unpre:
-        per_img_std = True
-        train_loader, valid_loader, _, test_loader, num_classes = load_data_subset_unpre(args.data_aug, args.batch_size,
-                                                                                         2, args.dataset, args.data_dir,
-                                                                                         labels_per_class=args.labels_per_class,
-                                                                                         valid_labels_per_class=args.valid_labels_per_class)
-    else:
-        per_img_std = False
-        train_loader, valid_loader, _, test_loader, num_classes = load_data_subset(args.data_aug, args.batch_size, 2,
-                                                                                   args.dataset, args.data_dir,
-                                                                                   labels_per_class=args.labels_per_class,
-                                                                                   valid_labels_per_class=args.valid_labels_per_class)
+    per_img_std = False
+    train_loader, valid_loader, _, test_loader, num_classes = load_data_subset(args.data_aug, args.batch_size, 2,
+                                                                               args.dataset, args.data_dir,
+                                                                               labels_per_class=args.labels_per_class,
+                                                                               valid_labels_per_class=args.valid_labels_per_class)
 
-    if args.dataset == 'tiny-imagenet-200':
-        stride = 2
-    else:
-        stride = 1
-    # train_loader, valid_loader, _ , test_loader, num_classes = load_data_subset(args.data_aug, args.batch_size, 2, args.dataset, args.data_dir, 0.0, labels_per_class=5000)
+    stride = 1
     print_log("=> creating model '{}'".format(args.arch), log)
 
     if args.arch != "lenet5":
@@ -351,7 +343,7 @@ def main():
         print_log("=> do not use any checkpoint for {} model".format(args.arch), log)
 
     if args.evaluate:
-        validate(test_loader, net, criterion, log)
+        validate(test_loader, net, log)
         return
 
     # Main loop
@@ -386,7 +378,7 @@ def main():
         test_loss.append(val_los)
         test_acc.append(val_acc)
 
-        dummy = recorder.update(epoch, tr_los, tr_acc, val_los, val_acc)
+        dummy = recorder.update(epoch, tr_los, tr_acc, val_los, val_acc, 0.0, 0.0)
 
         is_best = False
         if val_acc > best_acc:
